@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Créez votre compte ALLAIN2MARIE pour suivre vos commandes et profiter d'avantages exclusifs.">
+  <title>ALLAIN2MARIE | Mon Compte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="login.css">
+  <style>
+    .auth-tabs {
+      display: flex;
+      border-bottom: 2px solid #f1f5f9;
+      margin-bottom: 1.75rem;
+      gap: 0;
+    }
+    .auth-tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0.85rem 0.5rem;
+      font-size: 0.92rem;
+      font-weight: 800;
+      font-family: inherit;
+      color: #94a3b8;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .auth-tab-btn.active {
+      color: #000000;
+      border-bottom-color: #000000;
+    }
+    .auth-panel {
+      display: none;
+    }
+    .auth-panel.active {
+      display: block;
+    }
+    .user-logged-in-card {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+    .user-avatar-big {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #f1f5f9;
+      margin: 0 auto 0.85rem;
+      display: block;
+    }
+    .user-avatar-placeholder {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      margin: 0 auto 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .user-name-big {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #000;
+      margin-bottom: 0.3rem;
+    }
+    .user-email-small {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 1.5rem;
+    }
+    .btn-logout-user {
+      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      color: #ef4444;
+      font-weight: 700;
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-logout-user:hover {
+      border-color: #ef4444;
+      background: #fef2f2;
+    }
+    .user-orders-section {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid #f1f5f9;
+      text-align: left;
+    }
+    .user-orders-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 0.85rem;
+    }
+    .user-order-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #f8fafc;
+      font-size: 0.83rem;
+    }
+    .user-order-id { font-weight: 800; color: #000; }
+    .user-order-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .user-order-status.livré { background: #dcfce7; color: #16a34a; }
+    .user-order-status.cours { background: #fef3c7; color: #d97706; }
+    .no-orders-msg {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      text-align: center;
+      padding: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-wrapper">
+    <div class="glow-bg"></div>
+
+    <div class="login-card" style="max-width: 440px;">
+
+      <!-- Header / Logo -->
+      <div class="login-header">
+        <a href="index.html" class="brand-logo-wrap login-logo-wrap">
+          <img src="logo.png" alt="ALLAIN2MARIE" class="brand-logo-img login-logo-img">
+        </a>
+        <div class="security-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          MON ESPACE PERSONNEL
+        </div>
+      </div>
+
+      <!-- Error Alert -->
+      <div class="login-alert" id="authAlert" style="display: none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="authAlertMsg">Erreur</span>
+      </div>
+
+      <!-- USER LOGGED IN VIEW -->
+      <div id="loggedInView" style="display:none;">
+        <div class="user-logged-in-card">
+          <img id="userAvatarBig" src="" alt="Avatar" class="user-avatar-big" style="display:none;">
+          <div class="user-avatar-placeholder" id="userAvatarPlaceholder">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div class="user-name-big" id="userNameBig">Bonjour !</div>
+          <div class="user-email-small" id="userEmailSmall"></div>
+          <button class="btn-logout-user" id="userLogoutBtn">Se déconnecter</button>
+
+          <!-- Mes commandes -->
+          <div class="user-orders-section">
+            <div class="user-orders-title">Mes Commandes</div>
+            <div id="userOrdersList"><div class="no-orders-msg">Aucune commande pour le moment.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUTH FORMS (not logged in) -->
+      <div id="authFormsView">
+
+        <!-- Google Button -->
+        <button type="button" class="btn btn-block btn-google-login" id="googleAuthBtn" style="margin-bottom: 0;">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span>Continuer avec Google</span>
+        </button>
+
+        <div class="login-divider" style="margin: 1.25rem 0;">
+          <span>ou par e-mail</span>
+        </div>
+
+        <!-- Tabs: Connexion / Inscription -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="tabLogin">Connexion</button>
+          <button class="auth-tab-btn" id="tabSignup">Inscription</button>
+        </div>
+
+        <!-- LOGIN PANEL -->
+        <div class="auth-panel active" id="panelLogin">
+          <form id="loginForm" class="login-form">
+            <div class="form-group">
+              <label for="loginEmail" class="form-label">Adresse e-mail</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <input type="email" id="loginEmail" class="login-input" placeholder="votre@email.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="loginPassword" class="form-label">Mot de passe</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <input type="password" id="loginPassword" class="login-input" placeholder="••••••••" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-login" id="submitLoginBtn">
+              <span>Se connecter</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- SIGNUP PANEL -->
+        <div class="auth-panel" id="panelSignup">
+          <form id="signupForm" class="login-form">
+            <div class="form-group">
+              <label for="signupName" class="form-label">Prénom & Nom</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <input type="text" id="signupName" class="login-input" placeholder="Ex: Kouadio Aya" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signupEmail" class="form-label">Adresse e-mail</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <input type="email" id="signupEmail" class="login-input" placeholder="votre@email.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signupPhone" class="form-label">Numéro de téléphone (optionnel)</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13 19.79 19.79 0 0 1 1.61 4.34 2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.16 6.16l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                <input type="tel" id="signupPhone" class="login-input" placeholder="Ex: +225 07 00 00 00 00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="signupPassword" class="form-label">Mot de passe</label>
+              <div class="input-icon-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <input type="password" id="signupPassword" class="login-input" placeholder="Minimum 6 caractères" required minlength="6">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-login" id="submitSignupBtn" style="background: #16a34a;">
+              <span>Créer mon compte</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </form>
+        </div>
+
+      </div><!-- end authFormsView -->
+
+      <!-- Back to store -->
+      <div class="login-footer">
+        <a href="index.html" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Retour à la boutique
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="db.js"></script>
+  <script src="auth.js"></script>
+</body>
+</html>

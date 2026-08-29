@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Détail du T-Shirt ALLAIN2MARIE">
+  <title>ALLAIN2MARIE | Détail Produit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="product.css">
+</head>
+<body>
+
+  <!-- Header ALLAIN2MARIE -->
+  <header class="luxury-header">
+    <div class="header-inner">
+      <!-- Left: Back to shop & Search -->
+      <div class="header-left">
+        <a href="index.html" class="nav-icon-btn" aria-label="Retour à la boutique" title="Retour aux T-Shirts">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </a>
+        <button class="nav-icon-btn" aria-label="Recherche" id="searchBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Center: Logo -->
+      <div class="header-center">
+        <a href="index.html" class="brand-logo-wrap">
+          <img src="logo.png" alt="ALLAIN2MARIE" class="brand-logo-img">
+        </a>
+      </div>
+
+      <!-- Right: Account & Bag -->
+      <div class="header-right">
+        <a href="admin.html" class="nav-icon-btn" aria-label="Espace Admin" title="Administration">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+        <button class="nav-icon-btn" aria-label="Panier" id="cartBtn" title="Panier">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="cart-badge" id="cartBadge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dedicated Product Container -->
+  <main class="container pdp-main-container">
+    <div class="pdp-page-layout">
+      
+      <!-- Left / Center: 2 T-Shirt Views Side by Side -->
+      <div class="pdp-page-gallery" id="pdpGallery">
+        <div class="pdp-image-box">
+          <img src="" alt="Vue Avant" class="pdp-page-img" id="pageFrontImg">
+        </div>
+        <div class="pdp-image-box" id="pageBackBox">
+          <img src="" alt="Vue Arrière" class="pdp-page-img" id="pageBackImg">
+        </div>
+      </div>
+
+      <!-- Right: Title, Price, Qty, Add to Cart, Buy Now -->
+      <div class="pdp-page-info">
+        <!-- Collection Tag & SKU Reference -->
+        <div class="pdp-meta-top">
+          <span class="pdp-collection-tag" id="pageCollection">Signature</span>
+          <span class="pdp-sku-code" id="pageSku">A2M-SIG-1000</span>
+        </div>
+
+        <h1 class="pdp-page-title" id="pageTitle">11 AVRIL 2011</h1>
+        <div class="pdp-page-price" id="pagePrice">CFA 14,900</div>
+
+        <!-- Stock Availability Status -->
+        <div class="pdp-stock-status in-stock" id="pageStockStatus">
+          <span class="stock-dot"></span>
+          <span id="pageStockText">En stock — Expédition immédiate</span>
+        </div>
+
+        <!-- Tailles disponibles -->
+        <div class="pdp-size-section" id="pdpSizeSection">
+          <div class="pdp-size-header">
+            <span class="pdp-size-label">Taille sélectionnée :</span>
+            <span class="pdp-size-selected" id="pdpSelectedSizeText">M</span>
+          </div>
+          <div class="pdp-size-pills" id="pdpSizePills">
+            <!-- Dynamiquement généré via product.js -->
+          </div>
+        </div>
+
+        <div class="pdp-page-action-row">
+          <div class="pdp-qty-pill">
+            <button class="pdp-qty-btn" id="pageMinusBtn" aria-label="Diminuer">-</button>
+            <span class="pdp-qty-value" id="pageQtyVal">1</span>
+            <button class="pdp-qty-btn" id="pagePlusBtn" aria-label="Augmenter">+</button>
+          </div>
+          <button class="pdp-btn-add-cart" id="pageAddToCartBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span>Ajouter au panier</span>
+          </button>
+        </div>
+
+        <button class="pdp-btn-buy-now" id="pageBuyNowBtn">
+          Commander maintenant
+        </button>
+
+        <!-- Product Details / Badges -->
+        <div class="pdp-extra-infos">
+          <div class="pdp-info-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
+            <span>100% Coton Premium — Coupe Confortable & Respirante</span>
+          </div>
+          <div class="pdp-info-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            <span>Livraison express à Abidjan & Expédition Partout</span>
+          </div>
+          <div class="pdp-info-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Paiement Direct & Sécurisé via Wave</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Newsletter Footer Section (Join our email list) -->
+  <footer class="luxury-footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <h3 class="footer-heading">Rejoignez le Club ALLAIN2MARIE</h3>
+        <p class="footer-subheading">Recevez en avant-première nos offres exclusives et nouveaux drops.</p>
+      </div>
+      <div class="footer-right">
+        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Merci pour votre inscription à la newsletter ALLAIN2MARIE !');">
+          <div class="newsletter-input-wrap">
+            <input type="email" class="newsletter-input" placeholder="Votre adresse email" required>
+            <button type="submit" class="newsletter-submit-btn" aria-label="S'inscrire">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Shopping Cart Drawer (Exactement comme Shopify) -->
+  <div class="cart-drawer-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-drawer-header">
+      <div class="cart-drawer-title-wrap">
+        <h2 class="cart-drawer-title">Mon Panier</h2>
+        <span class="cart-drawer-count-pill" id="cartDrawerCount">0</span>
+      </div>
+      <button class="cart-close-circle-btn" id="closeCartBtn" aria-label="Fermer le panier">&times;</button>
+    </div>
+
+    <div class="cart-drawer-body" id="cartItemsList">
+      <!-- Items du panier dynamiques -->
+    </div>
+
+    <div class="cart-drawer-footer" id="cartDrawerFooter">
+      <!-- Promo Code Accordion & Input -->
+      <div class="cart-promo-section">
+        <div class="cart-discount-bar" id="cartDiscountBar">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            <span>Code Promo</span>
+          </div>
+          <span class="cart-discount-icon" id="cartDiscountIcon">+</span>
+        </div>
+
+        <div class="cart-promo-form" id="cartPromoForm" style="display: none;">
+          <div class="cart-promo-input-row">
+            <input type="text" id="promoInput" class="cart-promo-input" placeholder="ex: ALLAIN10, VIP20" autocomplete="off">
+            <button type="button" id="applyPromoBtn" class="cart-promo-apply-btn">Appliquer</button>
+          </div>
+          <div id="promoFeedback" class="cart-promo-feedback"></div>
+        </div>
+
+        <div id="activePromoBadge" class="active-promo-badge" style="display: none;">
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span id="activePromoText">ALLAIN10 (-10%)</span>
+          </div>
+          <button type="button" id="removePromoBtn" class="remove-promo-btn" title="Retirer le code promo">&times;</button>
+        </div>
+      </div>
+      
+      <div class="cart-total-row">
+        <span class="cart-total-label">Total estimé</span>
+        <div style="text-align: right;">
+          <div class="cart-total-val" id="cartTotal">CFA 0 XOF</div>
+          <div id="cartDiscountVal" class="cart-discount-deduction" style="display: none;">- CFA 0</div>
+        </div>
+      </div>
+      <div class="cart-tax-notice">Frais de livraison calculés à l'étape suivante.</div>
+
+      <button class="btn-checkout-black" id="checkoutBtn">
+        Valider la commande
+      </button>
+    </div>
+  </aside>
+
+  <div class="shopify-viewer-overlay" id="shopifyViewer">
+    <button class="shopify-viewer-close" id="closeShopifyViewer" aria-label="Fermer la visionneuse" title="Fermer">&times;</button>
+    
+    <!-- Navigation Arrows -->
+    <button class="shopify-viewer-nav prev" id="viewerPrevBtn" aria-label="Vue précédente">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+    <button class="shopify-viewer-nav next" id="viewerNextBtn" aria-label="Vue suivante">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+
+    <!-- Main Viewport (Center) -->
+    <div class="shopify-viewer-main" id="shopifyViewerMain">
+      <img src="" alt="Vue T-Shirt HD" class="shopify-viewer-img" id="viewerMainImg">
+    </div>
+
+    <!-- Right Sidebar Thumbnails (Exactement comme la capture) -->
+    <div class="shopify-viewer-thumbs" id="viewerThumbs">
+      <div class="shopify-thumb-card active" id="thumbFrontCard" data-idx="0">
+        <img src="" alt="Devant" id="thumbFrontImg">
+      </div>
+      <div class="shopify-thumb-card" id="thumbBackCard" data-idx="1">
+        <img src="" alt="Dos" id="thumbBackImg">
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery & Customer Information Modal -->
+  <div class="delivery-modal-overlay" id="deliveryModal">
+    <div class="delivery-modal-container">
+      <div class="delivery-modal-header">
+        <div>
+          <h2 class="delivery-modal-title">Livraison & Coordonnées</h2>
+          <p class="delivery-modal-subtitle">Renseignez vos informations pour la livraison de votre commande</p>
+        </div>
+        <button class="delivery-modal-close" id="closeDeliveryModalBtn" aria-label="Fermer">&times;</button>
+      </div>
+
+      <div class="delivery-modal-body">
+        <!-- Order Summary Brief -->
+        <div class="delivery-order-summary" id="deliveryOrderSummary">
+          <div class="delivery-summary-header">
+            <span class="delivery-summary-label">Total de la commande</span>
+            <span class="delivery-summary-total" id="deliverySummaryTotal">CFA 0 XOF</span>
+          </div>
+          <div class="delivery-summary-items" id="deliverySummaryItems"></div>
+
+          <!-- Promo Code Box inside Delivery Modal -->
+          <div class="delivery-promo-wrap" style="margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1;">
+            <div id="modalActivePromoBadge" style="display: none; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 6px 10px; border-radius: 6px; color: #166534; font-size: 0.82rem; font-weight: 700;">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span id="modalActivePromoText">Code ALLAIN10 (-10%)</span>
+              </div>
+              <button type="button" id="modalRemovePromoBtn" style="background: none; border: none; color: #dc2626; font-size: 1.1rem; cursor: pointer; font-weight: bold; line-height: 1; padding: 0 4px;" title="Retirer le code">&times;</button>
+            </div>
+            <div id="modalPromoInputRow" style="display: flex; gap: 0.5rem;">
+              <input type="text" id="modalPromoInput" placeholder="Code promo (ex: ALLAIN10, VIP20)" style="flex: 1; height: 36px; padding: 0 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem; text-transform: uppercase; font-family: monospace; font-weight: 700; outline: none;">
+              <button type="button" id="modalApplyPromoBtn" style="height: 36px; padding: 0 1rem; background: #000; color: #fff; border: 1px solid #000; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Appliquer</button>
+            </div>
+            <div id="modalPromoFeedback" style="font-size: 0.75rem; margin-top: 0.35rem; font-weight: 600;"></div>
+          </div>
+        </div>
+
+        <!-- Customer Form -->
+        <form class="delivery-form" id="deliveryForm">
+          <div class="form-group-delivery">
+            <label for="custName">Nom & Prénom *</label>
+            <input type="text" id="custName" class="delivery-input" placeholder="Ex: Jean Kouassi" required>
+          </div>
+
+          <div class="form-group-delivery">
+            <label for="custPhone">Numéro WhatsApp / Téléphone *</label>
+            <input type="tel" id="custPhone" class="delivery-input" placeholder="Ex: +225 07 00 00 00 00" required>
+          </div>
+
+          <div class="form-group-delivery">
+            <label for="custCity">Commune / Ville *</label>
+            <select id="custCity" class="delivery-input" required>
+              <option value="">Sélectionnez votre commune...</option>
+              <option value="Cocody">Cocody</option>
+              <option value="Marcory">Marcory</option>
+              <option value="Plateau">Plateau</option>
+              <option value="Riviera">Riviera</option>
+              <option value="Yopougon">Yopougon</option>
+              <option value="Treichville">Treichville</option>
+              <option value="Adjamé">Adjamé</option>
+              <option value="Koumassi">Koumassi</option>
+              <option value="Port-Bouët">Port-Bouët</option>
+              <option value="Abobo">Abobo</option>
+              <option value="Bingerville">Bingerville</option>
+              <option value="Autre / Intérieur du pays">Autre / Intérieur...</option>
+            </select>
+          </div>
+
+          <div class="form-group-delivery">
+            <label for="custAddress">Adresse de livraison & Repère précis *</label>
+            <textarea id="custAddress" class="delivery-input" rows="2" placeholder="Ex: Angré 8ème tranche, carrefour prière, près de la pharmacie..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-pay-wave-final" id="btnConfirmWavePayment">
+            <span style="display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              <span>Valider & Payer avec Wave</span>
+            </span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- LIVE SEARCH MODAL -->
+  <div class="search-modal-overlay" id="searchModalOverlay">
+    <div class="search-modal-card">
+      <div class="search-input-header">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" class="search-bar-input" id="searchBarInput" placeholder="Rechercher un T-Shirt..." autocomplete="off">
+        <button class="nav-icon-btn" id="closeSearchModalBtn" aria-label="Fermer la recherche">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="search-results-list" id="searchResultsList">
+        <div class="search-empty-msg">Tapez pour rechercher un modèle…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAVE PAYMENT OVERLAY -->
+  <div class="wave-payment-overlay" id="wavePaymentOverlay">
+    <div class="wave-payment-card">
+      <div class="wave-payment-header">
+        <div class="wave-payment-header-title">
+          <div class="wave-brand-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <span>Paiement Wave Business</span>
+        </div>
+        <div class="wave-countdown-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span class="wave-countdown-num" id="waveCountdownNum">30</span>s
+        </div>
+      </div>
+      <div class="wave-progress-bar-wrap">
+        <div class="wave-progress-bar" id="waveProgressBar"></div>
+      </div>
+      <div class="wave-iframe-container">
+        <div class="wave-iframe-fallback" id="waveIframeFallback">
+          <div class="wave-logo-box">
+            <div class="wave-logo-text">Payez avec <span>wave</span></div>
+          </div>
+          <p class="wave-instruction">Guichet de paiement ouvert. Finalisez sur l'application Wave, la boutique se met à jour automatiquement dans <strong id="waveCountdownNumFallback">30</strong>s.</p>
+          <a href="#" id="waveExternalLink" class="wave-open-btn" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Ouvrir l'application Wave
+          </a>
+        </div>
+      </div>
+      <div class="wave-payment-footer">
+        Paiement 100% sécurisé via Wave Business • Retour dans <span id="waveCountdownFooter">30</span>s
+      </div>
+    </div>
+  </div>
+
+  <!-- WAVE SUCCESS OVERLAY -->
+  <div class="wave-success-overlay" id="waveSuccessOverlay">
+    <div class="wave-success-icon" style="color: #16a34a;">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+    <div class="wave-success-title">Merci pour votre commande !</div>
+    <div class="wave-success-sub">Votre paiement Wave a été initié. Nous vous contacterons sur WhatsApp pour confirmer la livraison.</div>
+    <div class="wave-redirect-spinner"></div>
+    <div style="font-size:0.82rem; color:rgba(255,255,255,0.6);">Retour à la boutique…</div>
+  </div>
+
+  <!-- Firebase SDK & Database -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="db.js"></script>
+  <script src="product.js"></script>
+</body>
+</html>
