@@ -1213,21 +1213,29 @@ document.addEventListener('DOMContentLoaded', () => {
     products = localProducts;
 
     console.log('loadProducts - currentCategory:', currentCategory);
-    console.log('loadProducts - produits chargés:', localProducts.length);
+    console.log('loadProducts - produits locaux:', localProducts.length);
 
     // NE PAS réinitialiser à 'all' même si la catégorie est vide
     // renderStorefront() affichera "Aucun modèle disponible" si vide
 
     // Synchroniser avec Firebase en arrière-plan
     if (typeof dbGetProducts === 'function') {
+      console.log('loadProducts - tentative de synchronisation Firebase...');
       dbGetProducts().then(cloudProducts => {
+        console.log('loadProducts - produits depuis Firebase:', cloudProducts.length);
         if (cloudProducts && cloudProducts.length > 0) {
           products = cloudProducts;
           localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(cloudProducts));
           renderStorefront(currentCategory);
           console.log('loadProducts - produits synchronisés depuis Firebase:', cloudProducts.length);
+        } else {
+          console.log('loadProducts - Firebase vide ou erreur, utilisation des produits locaux');
         }
-      }).catch(() => {});
+      }).catch(err => {
+        console.error('loadProducts - erreur Firebase:', err);
+      });
+    } else {
+      console.log('loadProducts - dbGetProducts non disponible');
     }
   }
 
