@@ -103,6 +103,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       `;
+    } else if (type === 'error') {
+      icon = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      `;
     }
 
     toast.innerHTML = `${icon}<span>${message}</span>`;
@@ -432,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set Title, Collection, SKU & Initial Price
     document.title = `ALLAIN2MARIE | ${currentProduct.title}`;
     pageTitle.textContent = currentProduct.title;
-    
+
     if (pageCollection) {
       pageCollection.textContent = currentProduct.category || 'Collection Signature';
     }
@@ -461,6 +469,71 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (pageBackBox) {
       pageBackBox.style.display = 'none';
     }
+
+    // Share Button Event using Web Share API
+    const shareBtn = document.getElementById('shareBtn');
+    const mobileShareBtn = document.getElementById('mobileShareBtn');
+    
+    const handleShare = async () => {
+      const shareData = {
+        title: currentProduct.title || 'ALLAIN2MARIE T-Shirt',
+        text: `Découvrez ce magnifique T-Shirt "${currentProduct.title}" chez ALLAIN2MARIE !`,
+        url: window.location.href
+      };
+
+      try {
+        // Essayer l'API Web Share d'abord
+        if (navigator.share) {
+          await navigator.share(shareData);
+          showLuxuryToast('Merci pour le partage !', 'success');
+          return;
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          // L'utilisateur a annulé le partage - pas une vraie erreur
+          return;
+        }
+        console.log('Web Share non disponible ou annulé, fallback vers clipboard');
+      }
+
+      // Fallback: copier dans le presse-papier
+      try {
+        // Essayer l'API Clipboard moderne
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(shareData.url);
+          showLuxuryToast('Lien copié dans le presse-papier !', 'success');
+          return;
+        }
+      } catch (clipboardErr) {
+        console.log('Clipboard API non disponible, fallback vers méthode legacy');
+      }
+
+      // Fallback legacy: sélectionner et copier manuellement
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareData.url;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        textArea.style.top = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          showLuxuryToast('Lien copié dans le presse-papier !', 'success');
+        } else {
+          throw new Error('execCommand copy failed');
+        }
+      } catch (legacyErr) {
+        console.error('Tous les méthodes de partage ont échoué:', legacyErr);
+        showLuxuryToast('Impossible de partager. Copiez manuellement: ' + shareData.url, 'error');
+      }
+    };
+    
+    if (shareBtn) shareBtn.addEventListener('click', handleShare);
+    if (mobileShareBtn) mobileShareBtn.addEventListener('click', handleShare);
   }
 
   function updatePagePrice() {
@@ -886,11 +959,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const custName = document.getElementById('custName')?.value.trim() || '';
     const custPhone = document.getElementById('custPhone')?.value.trim() || '';
+    const custEmail = document.getElementById('custEmail')?.value.trim() || '';
     const custCity = document.getElementById('custCity')?.value.trim() || '';
     const custAddress = document.getElementById('custAddress')?.value.trim() || '';
 
-    if (!custName || !custPhone || !custCity || !custAddress) {
-      alert('Veuillez renseigner toutes vos informations de livraison.');
+    // Validation du nom (minimum 2 caractères)
+    if (!custName || custName.length < 2) {
+      alert('Veuillez entrer un nom et prénom valides (minimum 2 caractères).');
+      return;
+    }
+
+    // Validation du téléphone (format international)
+    const phoneRegex = /^\+?[0-9\s\-\(\)]{8,20}$/;
+    if (!custPhone || !phoneRegex.test(custPhone)) {
+      alert('Veuillez entrer un numéro de téléphone valide (ex: +225 07 00 00 00 00).');
+      return;
+    }
+
+    // Validation de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!custEmail || !emailRegex.test(custEmail)) {
+      alert('Veuillez entrer une adresse email valide (ex: jean.kouassi@email.com).');
+      return;
+    }
+
+    // Validation de la commune
+    if (!custCity) {
+      alert('Veuillez sélectionner votre commune ou ville.');
+      return;
+    }
+
+    // Validation de l'adresse (minimum 10 caractères)
+    if (!custAddress || custAddress.length < 10) {
+      alert('Veuillez entrer une adresse de livraison détaillée (minimum 10 caractères).');
       return;
     }
 
@@ -909,10 +1010,14 @@ document.addEventListener('DOMContentLoaded', () => {
         qty: Number(i.qty) || 1
       }));
 
+      const discount = calculateCartDiscount(pendingOrderSubtotal);
       const newOrder = {
         id: 'CMD-' + Date.now(),
-        customer: { name: custName, phone: custPhone, city: custCity, address: custAddress },
+        customer: { name: custName, phone: custPhone, email: custEmail, city: custCity, address: custAddress },
         items: sanitizedItems,
+        subtotal: pendingOrderSubtotal,
+        discountAmount: discount,
+        promoCode: activePromo ? activePromo.code : null,
         total: totalAmount,
         createdAt: new Date().toISOString(),
         deliveryStatus: 'En attente',
@@ -947,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Trigger WhatsApp notification
       try {
         const itemsSummary = itemsList.map(i => `• ${i.title || 'T-Shirt'} (x${i.qty || 1}) - ${formatFCFA((i.price || 0) * (i.qty || 1))}`).join('%0A');
-        const waMsg = `NOUVELLE COMMANDE ALLAIN2MARIE%0A%0AClient : ${custName}%0ATéléphone : ${custPhone}%0ACommune : ${custCity}%0AAdresse de livraison : ${custAddress}%0A%0AArticles :%0A${itemsSummary}%0A%0ATotal : ${formatFCFA(totalAmount)}%0APaiement : Wave Business`;
+        const waMsg = `NOUVELLE COMMANDE ALLAIN2MARIE%0A%0AClient : ${custName}%0ATéléphone : ${custPhone}%0AEmail : ${custEmail}%0ACommune : ${custCity}%0AAdresse de livraison : ${custAddress}%0A%0AArticles :%0A${itemsSummary}%0A%0ATotal : ${formatFCFA(totalAmount)}%0APaiement : Wave Business`;
         setTimeout(() => {
           try { window.open(`https://wa.me/?text=${waMsg}`, '_blank'); } catch(e) {}
         }, 1000);
@@ -1074,6 +1179,8 @@ document.addEventListener('DOMContentLoaded', () => {
     pageBackImg.title = 'Cliquez pour ouvrir la visionneuse HD';
     pageBackImg.addEventListener('click', () => openShopifyViewer(1));
   }
+
+
 
   // Close Viewer Button & Backdrop
   if (closeShopifyViewer) {
@@ -1299,24 +1406,256 @@ document.addEventListener('DOMContentLoaded', () => {
   // Init — avec fallback Firebase si localStorage est vide (premier visit sur mobile)
   updateCartUI();
 
+  // Charger les collections dynamiquement dans le menu burger
+  function loadCollectionsInMenu() {
+    const navMenuList = document.getElementById('navMenuList');
+    if (!navMenuList) return;
+
+    // Charger depuis localStorage d'abord (rapide)
+    const localCollectionsRaw = localStorage.getItem('ALLAIN2MARIE_COLLECTIONS');
+    let localCollections = [];
+    if (localCollectionsRaw) {
+      try {
+        localCollections = JSON.parse(localCollectionsRaw);
+      } catch (e) {}
+    }
+
+    // Si localStorage a des collections, les utiliser
+    if (localCollections.length > 0) {
+      renderCollectionsInMenu(localCollections);
+    }
+
+    // Ensuite synchroniser avec Firebase en arrière-plan si disponible
+    if (typeof dbGetCollections === 'function') {
+      dbGetCollections().then(cloudCollections => {
+        renderCollectionsInMenu(cloudCollections);
+      }).catch(() => {});
+    }
+  }
+
+  function renderCollectionsInMenu(collections) {
+    const navMenuList = document.getElementById('navMenuList');
+    if (!navMenuList) return;
+
+    // Supprimer les anciens éléments de collection (sauf Tous les T-Shirts et Mon Compte)
+    const menuItems = navMenuList.querySelectorAll('.nav-menu-item');
+    const staticItems = 2; // Tous les T-Shirts et Mon Compte
+    for (let i = menuItems.length - 1; i >= staticItems; i--) {
+      menuItems[i].remove();
+    }
+
+    // Ajouter les collections dynamiques (triées par nom)
+    collections.sort((a, b) => a.name.localeCompare(b.name)).forEach(col => {
+      const li = document.createElement('li');
+      li.className = 'nav-menu-item';
+      li.innerHTML = `
+        <a href="index.html?category=${col.name.toLowerCase()}">
+          <span>${col.name}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+      `;
+      // Insérer avant Mon Compte
+      navMenuList.insertBefore(li, navMenuList.lastElementChild);
+    });
+  }
+
+  // Charger les collections
+  loadCollectionsInMenu();
+
   const localProds = getProducts();
   const params = new URLSearchParams(window.location.search);
   const urlProductId = params.get('id');
 
-  // Toujours charger depuis Firebase d'abord pour avoir les donnees fraîches
-  // (evite le probleme de cache stale sur telephone)
-  if (typeof dbGetProducts === 'function') {
-    if (pageTitle && !localProds.length) pageTitle.textContent = 'Chargement...';
-    dbGetProducts().then(cloudProds => {
-      // dbGetProducts() a mis a jour localStorage avec les donnees fraîches
-      initProductPage();
-    }).catch(() => {
-      // Firebase indisponible → fallback localStorage
-      initProductPage();
+  // Charger depuis localStorage uniquement
+  initProductPage();
+
+  // ==========================================
+  // NEWSLETTER SUBSCRIPTION FORM
+  // ==========================================
+  const newsletterForm = document.getElementById('newsletterForm');
+  const newsletterEmail = document.getElementById('newsletterEmail');
+
+  if (newsletterForm && newsletterEmail) {
+    newsletterForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = newsletterEmail.value.trim();
+      if (!email || !email.includes('@')) {
+        showLuxuryToast('Veuillez entrer une adresse email valide', 'error');
+        return;
+      }
+
+      try {
+        // Vérifier si déjà inscrit localement
+        const subscriptions = typeof dbGetNewsletterSubscriptions === 'function' 
+          ? await dbGetNewsletterSubscriptions() 
+          : [];
+        
+        const alreadySubscribed = subscriptions.some(s => s.email.toLowerCase() === email.toLowerCase());
+        
+        if (alreadySubscribed) {
+          showLuxuryToast('Vous êtes déjà inscrit à notre newsletter !', 'info');
+          newsletterEmail.value = '';
+          return;
+        }
+
+        // Essayer l'inscription Mailchimp d'abord
+        let mailchimpSuccess = false;
+        if (typeof subscribeToMailchimp === 'function') {
+          try {
+            const mailchimpResult = await subscribeToMailchimp(email);
+            mailchimpSuccess = mailchimpResult.success;
+            console.log('Mailchimp inscription:', mailchimpSuccess);
+          } catch (mailchimpError) {
+            console.warn('Mailchimp non disponible, fallback localStorage:', mailchimpError);
+          }
+        }
+
+        // S'inscrire localement (toujours)
+        if (typeof dbSubscribeNewsletter === 'function') {
+          await dbSubscribeNewsletter(email);
+        } else {
+          // Fallback localStorage
+          let localSubs = JSON.parse(localStorage.getItem('ALLAIN2MARIE_NEWSLETTER') || '[]');
+          localSubs.push({
+            id: 'sub_' + Date.now(),
+            email: email.toLowerCase(),
+            subscribedAt: new Date().toISOString(),
+            active: true,
+            mailchimpSynced: mailchimpSuccess
+          });
+          localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify(localSubs));
+        }
+
+        if (mailchimpSuccess) {
+          showLuxuryToast('Merci ! Vous recevrez nos offres exclusives par email.', 'success');
+        } else {
+          showLuxuryToast('Merci pour votre inscription à la newsletter ALLAIN2MARIE !', 'success');
+        }
+        newsletterEmail.value = '';
+      } catch (error) {
+        console.error('Erreur inscription newsletter:', error);
+        showLuxuryToast('Une erreur est survenue. Veuillez réessayer.', 'error');
+      }
     });
-  } else {
-    initProductPage();
   }
+
+  // ==========================================
+  // AUTHENTICATION STATE MANAGEMENT
+  // ==========================================
+  const menuBtn = document.getElementById('menuBtn');
+  const navDrawer = document.getElementById('navDrawer');
+  const navDrawerOverlay = document.getElementById('navDrawerOverlay');
+  const closeNavDrawerBtn = document.getElementById('closeNavDrawerBtn');
+  const navAuthLink = document.getElementById('navAuthLink');
+  const navAuthText = document.getElementById('navAuthText');
+  const navLogoutItem = document.getElementById('navLogoutItem');
+  const navLogoutBtn = document.getElementById('navLogoutBtn');
+
+  function openNavDrawer() {
+    if (navDrawer) navDrawer.classList.add('active');
+    if (navDrawerOverlay) navDrawerOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNavDrawer() {
+    if (navDrawer) navDrawer.classList.remove('active');
+    if (navDrawerOverlay) navDrawerOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (menuBtn) menuBtn.addEventListener('click', openNavDrawer);
+  if (closeNavDrawerBtn) closeNavDrawerBtn.addEventListener('click', closeNavDrawer);
+  if (navDrawerOverlay) navDrawerOverlay.addEventListener('click', closeNavDrawer);
+
+  function updateAuthUI() {
+    const userName = localStorage.getItem('A2M_USER_NAME');
+    const userEmail = localStorage.getItem('A2M_USER_EMAIL');
+    const userUid = localStorage.getItem('A2M_USER_UID');
+    const isLoggedIn = !!userUid;
+
+    if (isLoggedIn) {
+      // User is logged in
+      if (navAuthLink) {
+        navAuthLink.href = 'auth.html';
+        navAuthText.textContent = userName ? `Bonjour, ${userName.split(' ')[0]}` : 'Mon Compte';
+      }
+      if (navLogoutItem) {
+        navLogoutItem.style.display = 'block';
+      }
+    } else {
+      // User is logged out
+      if (navAuthLink) {
+        navAuthLink.href = 'auth.html';
+        navAuthText.textContent = 'Connexion';
+      }
+      if (navLogoutItem) {
+        navLogoutItem.style.display = 'none';
+      }
+    }
+  }
+
+  // Logout from navigation menu
+  if (navLogoutBtn) {
+    navLogoutBtn.addEventListener('click', async () => {
+      // Clear Firebase auth if available
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        try {
+          await firebase.auth().signOut();
+        } catch (e) {
+          console.error('Firebase sign out error:', e);
+        }
+      }
+
+      // Clear local storage
+      localStorage.removeItem('A2M_USER_NAME');
+      localStorage.removeItem('A2M_USER_EMAIL');
+      localStorage.removeItem('A2M_USER_PHOTO');
+      localStorage.removeItem('A2M_USER_UID');
+
+      // Update UI
+      updateAuthUI();
+      closeNavDrawer();
+
+      // Show toast notification
+      showLuxuryToast('Vous avez été déconnecté', 'success');
+
+      // Redirect to home page
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    });
+  }
+
+  // Initial auth UI update
+  updateAuthUI();
+
+  // Listen for Firebase auth state changes
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        localStorage.setItem('A2M_USER_NAME', user.displayName || user.email || 'Utilisateur');
+        localStorage.setItem('A2M_USER_EMAIL', user.email || '');
+        localStorage.setItem('A2M_USER_PHOTO', user.photoURL || '');
+        localStorage.setItem('A2M_USER_UID', user.uid);
+      } else {
+        localStorage.removeItem('A2M_USER_NAME');
+        localStorage.removeItem('A2M_USER_EMAIL');
+        localStorage.removeItem('A2M_USER_PHOTO');
+        localStorage.removeItem('A2M_USER_UID');
+      }
+      updateAuthUI();
+    });
+  }
+
+  // Add Escape key handler for navigation drawer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (navDrawer && navDrawer.classList.contains('active')) {
+        closeNavDrawer();
+      }
+    }
+  });
 });
 
 

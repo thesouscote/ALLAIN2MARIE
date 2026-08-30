@@ -58,6 +58,8 @@
     </div>
   </header>
 
+  <!-- Main Content Wrapper -->
+  <div class="main-content-wrapper">
   <!-- Main Storefront Container -->
   <div class="container store-container">
 
@@ -65,16 +67,9 @@
     <section class="store-hero-section">
       <div class="section-header-bar">
         <div>
-          <h1 class="section-heading">Collection & Modèles Disponibles</h1>
-          <p class="section-subheading">Découvrez les créations de la marque ALLAIN2MARIE</p>
+          <h1 class="section-heading">Boutique</h1>
         </div>
-        <div class="store-filter-pills" id="categoryFilterBar">
-          <button class="filter-pill active" data-category="all">Tous les T-Shirts</button>
-          <button class="filter-pill" data-category="Signature">Signature</button>
-          <button class="filter-pill" data-category="Drop 01">Drop 01</button>
-          <button class="filter-pill" data-category="Essentiels">Essentiels</button>
-          <button class="filter-pill" data-category="Edition Limitee">Édition Limitée</button>
-        </div>
+
       </div>
 
       <!-- Products Grid -->
@@ -83,26 +78,13 @@
       </div>
     </section>
   </div>
+  </div>
 
-  <!-- Newsletter Footer Section (Join our email list) -->
-  <footer class="luxury-footer">
-    <div class="footer-inner">
-      <div class="footer-left">
-        <h3 class="footer-heading">Rejoignez le Club ALLAIN2MARIE</h3>
-        <p class="footer-subheading">Recevez en avant-première nos offres exclusives et nouveaux drops.</p>
-      </div>
-      <div class="footer-right">
-        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Merci pour votre inscription à la newsletter ALLAIN2MARIE !');">
-          <div class="newsletter-input-wrap">
-            <input type="email" class="newsletter-input" placeholder="Votre adresse email" required>
-            <button type="submit" class="newsletter-submit-btn" aria-label="S'inscrire">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </button>
-          </div>
-        </form>
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-copyright">
+        <p>Tous droits réservés à thesouscote</p>
       </div>
     </div>
   </footer>
@@ -262,6 +244,11 @@
           </div>
 
           <div class="form-group-delivery">
+            <label for="custEmail">Adresse Email *</label>
+            <input type="email" id="custEmail" class="delivery-input" placeholder="Ex: jean.kouassi@gmail.com" required>
+          </div>
+
+          <div class="form-group-delivery">
             <label for="custCity">Commune / Ville *</label>
             <select id="custCity" class="delivery-input" required>
               <option value="">Sélectionnez votre commune...</option>
@@ -312,36 +299,19 @@
       </button>
     </div>
     <div class="nav-drawer-body">
-      <ul class="nav-menu-list">
+      <ul class="nav-menu-list" id="navMenuList">
         <li class="nav-menu-item">
           <a href="index.html">
-            <span>Tous les T-Shirts</span>
+            <span>Boutique</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </a>
         </li>
+        <!-- Collections dynamiques -->
         <li class="nav-menu-item">
-          <button data-filter-nav="signature">
-            <span>Signature</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </li>
-        <li class="nav-menu-item">
-          <button data-filter-nav="drop01">
-            <span>Drop 01</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </li>
-        <li class="nav-menu-item">
-          <button data-filter-nav="essentials">
-            <span>Essentiels</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
-        </li>
-        <li class="nav-menu-item">
-          <button data-filter-nav="limited">
-            <span>Édition Limitée</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-          </button>
+          <a href="auth.html">
+            <span>Mon Compte</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </a>
         </li>
       </ul>
 

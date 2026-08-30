@@ -4,51 +4,143 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 0. SECURITY & AUTHENTICATION GUARD
   // ==========================================
-  const isAuth = sessionStorage.getItem('ALLAIN2MARIE_AUTH') || localStorage.getItem('ALLAIN2MARIE_AUTH');
-  if (isAuth !== 'true') {
-    window.location.href = 'login.html';
-    return;
+  
+  // Helper format FCFA
+  function formatFCFA(amount) {
+    if (amount === null || amount === undefined || isNaN(amount)) return '';
+    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   }
 
-  // Display Logged-in User Profile if available
-  const adminUserPill = document.getElementById('adminUserPill');
-  const adminUserPhoto = document.getElementById('adminUserPhoto');
-  const adminUserName = document.getElementById('adminUserName');
-
-  const loggedUser = sessionStorage.getItem('ALLAIN2MARIE_USER_NAME') || 
-                     localStorage.getItem('ALLAIN2MARIE_USER_NAME') || 
-                     sessionStorage.getItem('ALLAIN2MARIE_USER') || 
-                     localStorage.getItem('ALLAIN2MARIE_USER');
-
-  const loggedPhoto = sessionStorage.getItem('ALLAIN2MARIE_USER_PHOTO') || 
-                      localStorage.getItem('ALLAIN2MARIE_USER_PHOTO');
-
-  if (adminUserPill && loggedUser) {
-    adminUserPill.style.display = 'inline-flex';
-    if (adminUserName) adminUserName.textContent = loggedUser;
-    if (adminUserPhoto && loggedPhoto) {
-      adminUserPhoto.src = loggedPhoto;
-      adminUserPhoto.style.display = 'block';
+  // ==========================================
+  // 1. DATA INITIALIZATION & LOCALSTORAGE
+  // ==========================================
+  function loadProducts() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      console.error('Error parsing products localStorage', e);
+      return [];
     }
   }
 
-  // Logout Handler
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      if (typeof firebase !== 'undefined' && firebase.auth) {
-        try { await firebase.auth().signOut(); } catch (e) {}
+  function productImageSrc(p, slot) {
+    if (!p) return '';
+    if (p.images && p.images[slot]) return p.images[slot];
+    if (slot === 'front') return p.frontImage || '';
+    if (slot === 'back') return p.backImage || '';
+    return '';
+  }
+
+  function saveProducts(newProducts = null) {
+    if (Array.isArray(newProducts)) {
+      products = newProducts;
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    } catch (err) {
+      console.warn('LocalStorage quota warning, saving light payload:', err);
+      try {
+        const light = products.map(p => ({
+          ...p,
+          images: {
+            front: p.images?.front ? p.images.front.slice(0, 300000) : '',
+            back: p.images?.back ? p.images.back.slice(0, 300000) : ''
+          }
+        }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+      } catch (e2) {
+        console.error('LocalStorage save error:', e2);
       }
-      sessionStorage.removeItem('ALLAIN2MARIE_AUTH');
-      sessionStorage.removeItem('ALLAIN2MARIE_USER');
-      sessionStorage.removeItem('ALLAIN2MARIE_USER_PHOTO');
-      sessionStorage.removeItem('ALLAIN2MARIE_USER_NAME');
-      localStorage.removeItem('ALLAIN2MARIE_AUTH');
-      localStorage.removeItem('ALLAIN2MARIE_USER');
-      localStorage.removeItem('ALLAIN2MARIE_USER_PHOTO');
-      localStorage.removeItem('ALLAIN2MARIE_USER_NAME');
-      window.location.href = 'login.html';
-    });
+    }
+    renderCatalog();
+    updateMetrics();
+  }
+
+  // ==========================================
+  // 2. TOAST NOTIFICATIONS
+  // ==========================================
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        ${type === 'success' ? '<polyline points="20 6 9 17 4 12"></polyline>' : '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>'}
+      </svg>
+      <span>${message}</span>
+    `;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(12px)';
+      toast.style.transition = 'all 0.25s ease';
+      setTimeout(() => toast.remove(), 250);
+    }, 3000);
+  }
+
+  // DOM Elements
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  const topAddProductBtn = document.getElementById('topAddProductBtn');
+  const catalogAddBtn = document.getElementById('catalogAddBtn');
+  const emptyAddProductBtn = document.getElementById('emptyAddProductBtn');
+  const cancelFormBtn = document.getElementById('cancelFormBtn');
+  const metricActiveCount = document.getElementById('metricActiveCount');
+  const metricTotalStock = document.getElementById('metricTotalStock');
+  const metricCatalogOrders = document.getElementById('metricCatalogOrders');
+  const productsTableBody = document.getElementById('productsTableBody');
+  const emptyCatalogState = document.getElementById('emptyCatalogState');
+  const catalogSearchInput = document.getElementById('catalogSearchInput');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const productForm = document.getElementById('productForm');
+  const formTitle = document.getElementById('formTitle');
+  const editProductId = document.getElementById('editProductId');
+  const productTitle = document.getElementById('productTitle');
+  const productSku = document.getElementById('productSku');
+  const productCategory = document.getElementById('productCategory');
+  const productPrice = document.getElementById('productPrice');
+  const saveProductBtn = document.getElementById('saveProductBtn');
+  const sizeCheckboxes = document.querySelectorAll('.size-checkbox');
+  const sizeQtyInputs = document.querySelectorAll('.size-qty-input');
+  const imageSlots = document.querySelectorAll('.admin-image-slot');
+  const confirmModal = document.getElementById('confirmModal');
+  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+  const confirmOkBtn = document.getElementById('confirmOkBtn');
+  const toastContainer = document.getElementById('toastContainer');
+
+  // Collections elements (déclarés ici pour éviter l'erreur before initialization)
+  let collectionsTableBody = null;
+  let openAddCollectionModalBtn = null;
+  let manageCollectionsQuickBtn = null;
+  let addNewCollectionQuickBtn = null;
+  let collectionModal = null;
+  let closeCollectionModalBtn = null;
+  let cancelCollectionModalBtn = null;
+  let collectionForm = null;
+  let collectionModalTitle = null;
+  let editCollectionId = null;
+  let colNameInput = null;
+  let colCodeInput = null;
+  let colDescInput = null;
+
+  // Orders metrics elements (déclarés ici pour éviter l'erreur before initialization)
+  let metricTotalOrders = null;
+  let metricTotalSales = null;
+  let metricPendingDeliveries = null;
+  let ordersTableBody = null;
+  let emptyOrdersState = null;
+  let ordersCountBadge = null;
+  let refreshOrdersBtn = null;
+
+  function initOrdersElements() {
+    ordersTableBody = document.getElementById('ordersTableBody');
+    emptyOrdersState = document.getElementById('emptyOrdersState');
+    metricTotalOrders = document.getElementById('metricTotalOrders');
+    metricTotalSales = document.getElementById('metricTotalSales');
+    metricPendingDeliveries = document.getElementById('metricPendingDeliveries');
+    ordersCountBadge = document.getElementById('ordersCountBadge');
+    refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
   }
 
   // State
@@ -58,46 +150,151 @@ document.addEventListener('DOMContentLoaded', () => {
     front: '',
     back: ''
   };
-  let pendingDeleteId = null;
 
-  // DOM Elements - Tabs
-  const tabPanes = document.querySelectorAll('.tab-pane');
-  const topAddProductBtn = document.getElementById('topAddProductBtn');
-  const catalogAddBtn = document.getElementById('catalogAddBtn');
-  const emptyAddProductBtn = document.getElementById('emptyAddProductBtn');
-  const cancelFormBtn = document.getElementById('cancelFormBtn');
+  // Placeholder functions (to be implemented properly)
+  function renderCatalog() {
+    console.log(' Rendu du catalogue...');
+    // Implementation simplifiée pour éviter les erreurs
+    if (productsTableBody) {
+      productsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">Chargement...</td></tr>';
+    }
+  }
 
-  // DOM Elements - Metrics
-  const metricActiveCount = document.getElementById('metricActiveCount');
-  const metricTotalStock = document.getElementById('metricTotalStock');
-  const metricCatalogOrders = document.getElementById('metricCatalogOrders');
+  function updateMetrics() {
+    console.log(' Mise à jour des métriques...');
+    // Implementation simplifiée
+    if (metricActiveCount) metricActiveCount.textContent = products.length;
+    if (metricTotalStock) metricTotalStock.textContent = '0';
+    if (metricCatalogOrders) metricCatalogOrders.textContent = '0';
+  }
 
-  // DOM Elements - Table & Filter
-  const productsTableBody = document.getElementById('productsTableBody');
-  const emptyCatalogState = document.getElementById('emptyCatalogState');
-  const catalogSearchInput = document.getElementById('catalogSearchInput');
-  const categoryFilter = document.getElementById('categoryFilter');
+  // ==========================================
+  // SECURITY CHECK
+  // ==========================================
 
-  // DOM Elements - Form
-  const productForm = document.getElementById('productForm');
-  const formTitle = document.getElementById('formTitle');
-  const editProductId = document.getElementById('editProductId');
-  const productTitle = document.getElementById('productTitle');
-  const productSku = document.getElementById('productSku');
-  const productCategory = document.getElementById('productCategory');
-  const productPrice = document.getElementById('productPrice');
-  const saveProductBtn = document.getElementById('saveProductBtn');
+  // Attendre que Firebase Auth soit initialisé avant de vérifier l'accès
+  function checkAdminAccess() {
+    return new Promise((resolve) => {
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        console.error(' Firebase Auth non disponible - Accès refusé');
+        resolve(false);
+        return;
+      }
 
-  // DOM Elements - Sizes & Image Slots
-  const sizeCheckboxes = document.querySelectorAll('.size-checkbox');
-  const sizeQtyInputs = document.querySelectorAll('.size-qty-input');
-  const imageSlots = document.querySelectorAll('.admin-image-slot');
+      // Attendre que Firebase ait fini d'initialiser et restauré la session
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        // Si pas d'utilisateur, on attend la prochaine tentative (Firebase peut prendre du temps)
+        if (!user || !user.email) {
+          console.warn(' Firebase encore en cours d\'initialisation, attente...');
+          return; // On NE résout PAS, on attend le prochain événement
+        }
 
-  // DOM Elements - Modal & Toast
-  const confirmModal = document.getElementById('confirmModal');
-  const confirmCancelBtn = document.getElementById('confirmCancelBtn');
-  const confirmOkBtn = document.getElementById('confirmOkBtn');
-  const toastContainer = document.getElementById('toastContainer');
+        // Un utilisateur est présent, on peut prendre une décision
+        unsubscribe();
+
+        // Vérification stricte via liste des admins
+        if (typeof dbIsAdminUser === 'function' && dbIsAdminUser(user.email)) {
+          console.log(' Accès admin autorisé pour:', user.email);
+          resolve(true);
+        } else {
+          console.warn(' Accès refusé: email non autorisé:', user.email);
+          firebase.auth().signOut();
+          resolve(false);
+        }
+      });
+
+      // Timeout de sécurité après 5 secondes pour éviter d'attendre indéfiniment
+      setTimeout(() => {
+        unsubscribe();
+        const user = firebase.auth().currentUser;
+        if (!user || !user.email) {
+          console.warn(' Timeout: pas d\'utilisateur après 5 secondes');
+          resolve(false);
+        }
+      }, 5000);
+    });
+  }
+
+  // Vérification asynchrone de l'accès admin
+  checkAdminAccess().then(hasAccess => {
+    if (!hasAccess) {
+      console.log(' Redirection vers login.html');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    console.log(' Accès admin confirmé, chargement de l\'interface...');
+    initAdminInterface();
+  });
+
+  // Fonction d'initialisation de l'interface admin (appelée après authentification réussie)
+  function initAdminInterface() {
+    console.log(' Initialisation de l\'interface admin...');
+
+    // Initialiser les éléments des commandes
+    initOrdersElements();
+
+    // Initialiser la gestion des collections
+    initCollectionsManagement();
+    
+    // Display Logged-in User Profile from Firebase Auth
+    const adminUserPill = document.getElementById('adminUserPill');
+    const adminUserPhoto = document.getElementById('adminUserPhoto');
+    const adminUserName = document.getElementById('adminUserName');
+
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+      const user = firebase.auth().currentUser;
+      if (user && adminUserPill) {
+        adminUserPill.style.display = 'inline-flex';
+        
+        const displayName = user.displayName || user.email || 'Administrateur';
+        if (adminUserName) adminUserName.textContent = displayName;
+        
+        if (adminUserPhoto && user.photoURL) {
+          adminUserPhoto.src = user.photoURL;
+          adminUserPhoto.style.display = 'block';
+        }
+      }
+    }
+    
+    // Initialiser l'interface principale
+    renderCatalog();
+    updateMetrics();
+  }
+
+  // Logout Handler (défini globalement pour être toujours disponible)
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      console.log(' Déconnexion admin en cours...');
+      
+      // Déconnexion Firebase
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        try {
+          await firebase.auth().signOut();
+          console.log(' Firebase Auth déconnecté');
+        } catch (e) {
+          console.error(' Erreur lors de la déconnexion Firebase:', e);
+        }
+      }
+      
+      // Nettoyage complet du stockage local (fallback)
+      sessionStorage.removeItem('ALLAIN2MARIE_AUTH');
+      sessionStorage.removeItem('ALLAIN2MARIE_USER');
+      sessionStorage.removeItem('ALLAIN2MARIE_USER_PHOTO');
+      sessionStorage.removeItem('ALLAIN2MARIE_USER_NAME');
+      sessionStorage.removeItem('ALLAIN2MARIE_USER_EMAIL');
+      localStorage.removeItem('ALLAIN2MARIE_AUTH');
+      localStorage.removeItem('ALLAIN2MARIE_USER');
+      localStorage.removeItem('ALLAIN2MARIE_USER_PHOTO');
+      localStorage.removeItem('ALLAIN2MARIE_USER_NAME');
+      localStorage.removeItem('ALLAIN2MARIE_USER_EMAIL');
+      
+      window.location.href = 'login.html';
+    });
+  } else {
+    console.warn(' Bouton de déconnexion non trouvé dans le DOM');
+  }
 
   // Helper format FCFA
   function formatFCFA(amount) {
@@ -110,57 +307,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   function loadProducts() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      // Default initial mock catalog for ALLAIN2MARIE
-      const initialProducts = [
-        {
-          id: 'prod_' + Date.now(),
-          title: 'T-Shirt Oversize Signature Noir',
-          sku: 'A2M-SIG-001',
-          category: 'Signature',
-          price: 18000,
-          status: 'published',
-          images: {
-            front: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%230f172a"/><path d="M120 120 L280 120 L320 200 L270 220 L250 180 L250 340 L150 340 L150 180 L130 220 L80 200 Z" fill="%23000000" stroke="%23334155" stroke-width="2"/><text x="200" y="250" fill="%23ffffff" font-family="sans-serif" font-size="16" font-weight="900" text-anchor="middle" letter-spacing="2">ALLAIN2MARIE</text></svg>',
-            back: ''
-          },
-          sizes: {
-            'S': { qty: 2, price: 18000 },
-            'M': { qty: 5, price: 18000 },
-            'L': { qty: 3, price: 18000 },
-            'XL': { qty: 0, price: 18000 }
-          },
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'prod_' + (Date.now() + 1),
-          title: 'T-Shirt Heavyweight Blanc Drop 01',
-          sku: 'A2M-D01-002',
-          category: 'Drop 01',
-          price: 20000,
-          status: 'published',
-          images: {
-            front: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%23f8fafc"/><path d="M120 120 L280 120 L320 200 L270 220 L250 180 L250 340 L150 340 L150 180 L130 220 L80 200 Z" fill="%23ffffff" stroke="%23cbd5e1" stroke-width="2"/><text x="200" y="250" fill="%23000000" font-family="sans-serif" font-size="16" font-weight="900" text-anchor="middle" letter-spacing="2">ALLAIN2MARIE</text></svg>',
-            back: ''
-          },
-          sizes: {
-            'S': { qty: 0, price: 20000 },
-            'M': { qty: 4, price: 20000 },
-            'L': { qty: 4, price: 20000 },
-            'XL': { qty: 2, price: 20000 }
-          },
-          createdAt: new Date().toISOString()
-        }
-      ];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialProducts));
-      return initialProducts;
-    }
+    if (!raw) return [];
     try {
       return JSON.parse(raw);
     } catch (e) {
       console.error('Error parsing products localStorage', e);
       return [];
     }
+  }
+
+  function productImageSrc(p, slot) {
+    if (!p) return '';
+    if (p.images && p.images[slot]) return p.images[slot];
+    if (slot === 'front') return p.frontImage || '';
+    if (slot === 'back') return p.backImage || '';
+    return '';
   }
 
   function saveProducts(newProducts = null) {
@@ -218,9 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabNavCollections = document.getElementById('tabNavCollections');
   const tabNavPromos = document.getElementById('tabNavPromos');
   const tabNavAddProduct = document.getElementById('tabNavAddProduct');
-  const ordersCountBadge = document.getElementById('ordersCountBadge');
 
   function switchTab(tabId) {
+    // Sauvegarder la tab active
+    sessionStorage.setItem('ALLAIN2MARIE_ADMIN_ACTIVE_TAB', tabId);
+
     tabPanes.forEach(pane => {
       pane.classList.toggle('active', pane.id === tabId);
     });
@@ -236,9 +399,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (tabNavPromos) {
       tabNavPromos.className = tabId === 'promos-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
-    }
-    if (tabNavAddProduct) {
-      tabNavAddProduct.className = tabId === 'add-product-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
     }
 
     if (tabId === 'catalog-tab') {
@@ -257,7 +417,46 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabNavOrders) tabNavOrders.addEventListener('click', () => switchTab('orders-tab'));
   if (tabNavCollections) tabNavCollections.addEventListener('click', () => switchTab('collections-tab'));
   if (tabNavPromos) tabNavPromos.addEventListener('click', () => switchTab('promos-tab'));
-  if (tabNavAddProduct) tabNavAddProduct.addEventListener('click', () => resetAndOpenForm());
+
+  // Restaurer la tab active après chargement (immédiatement pour éviter le flash)
+  const savedTab = sessionStorage.getItem('ALLAIN2MARIE_ADMIN_ACTIVE_TAB');
+  if (savedTab) {
+    // Appliquer directement les classes sans appel switchTab pour éviter le flash
+    tabPanes.forEach(pane => {
+      pane.classList.toggle('active', pane.id === savedTab);
+    });
+
+    if (tabNavCatalog) {
+      tabNavCatalog.className = savedTab === 'catalog-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+    if (tabNavOrders) {
+      tabNavOrders.className = savedTab === 'orders-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+    if (tabNavCollections) {
+      tabNavCollections.className = savedTab === 'collections-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+    if (tabNavPromos) {
+      tabNavPromos.className = savedTab === 'promos-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+    if (tabNavAddProduct) {
+      tabNavAddProduct.className = savedTab === 'add-product-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+
+    // Charger les données de l'onglet restauré
+    if (savedTab === 'catalog-tab') {
+      renderCatalog();
+      updateMetrics();
+    } else if (savedTab === 'orders-tab') {
+      renderOrders();
+    } else if (savedTab === 'collections-tab') {
+      // Attendre que les éléments soient initialisés
+      if (collectionsTableBody) {
+        renderCollectionsTable();
+      }
+    } else if (savedTab === 'promos-tab') {
+      renderPromosTable();
+    }
+  }
 
   if (topAddProductBtn) topAddProductBtn.addEventListener('click', () => resetAndOpenForm());
   if (catalogAddBtn) catalogAddBtn.addEventListener('click', () => resetAndOpenForm());
@@ -269,38 +468,34 @@ document.addEventListener('DOMContentLoaded', () => {
   if (syncFirebaseBtn) {
     syncFirebaseBtn.addEventListener('click', async () => {
       if (typeof dbSaveProduct !== 'function') {
-        showToast('⚠️ Firebase non connecté', 'error');
+        showToast(' Firebase non connecté', 'error');
         return;
       }
-      const prods = getProducts();
-      if (prods.length === 0) {
+      if (products.length === 0) {
         showToast('Aucun produit à synchroniser');
         return;
       }
       syncFirebaseBtn.disabled = true;
-      syncFirebaseBtn.textContent = '⏳ Sync...';
+      syncFirebaseBtn.textContent = ' Sync...';
       let synced = 0, skipped = 0;
-      for (const p of prods) {
-        const totalKB = getBase64SizeKB(p.frontImage) + getBase64SizeKB(p.backImage) + 50;
-        if (totalKB <= 700) {
-          try {
-            await dbSaveProduct(p);
-            synced++;
-          } catch (e) {
-            console.error('Erreur sync:', p.name, e);
-            skipped++;
-          }
-        } else {
-          console.warn('Produit trop lourd:', p.name, totalKB + 'KB — re-editez pour recompresser');
+      for (const p of products) {
+        try {
+          const saved = await dbSaveProduct(p);
+          const idx = products.findIndex(item => item.id === p.id);
+          if (idx !== -1 && saved) products[idx] = saved;
+          synced++;
+        } catch (e) {
+          console.error('Erreur sync:', p.title, e);
           skipped++;
         }
       }
+      saveProducts(products);
       syncFirebaseBtn.disabled = false;
       syncFirebaseBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span class="btn-label-desktop">Sync Firebase</span>';
       if (skipped > 0) {
-        showToast(`⚠️ ${synced} sync OK, ${skipped} trop lourds (re-editez les images)`, 'warning');
+        showToast(` ${synced} sync OK, ${skipped} trop lourds (re-editez les images)`, 'warning');
       } else {
-        showToast(`☁️ ${synced} produit(s) synchronisé(s) sur Firebase !`);
+        showToast(` ${synced} produit(s) synchronisé(s) sur Firebase !`);
       }
     });
   }
@@ -359,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
 
       // Product thumbnail
-      const thumbSrc = p.images?.front || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="%2394a3b8"><rect width="24" height="24" rx="4" fill="%23f1f5f9"/><path d="M12 5c1 0 1.5.5 1.5 1.5h3v3h-1.5v6H9v-6H7.5v-3h3C10.5 5.5 11 5 12 5z"/></svg>';
+      const thumbSrc = productImageSrc(p, 'front') || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="%2394a3b8"><rect width="24" height="24" rx="4" fill="%23f1f5f9"/><path d="M12 5c1 0 1.5.5 1.5 1.5h3v3h-1.5v6H9v-6H7.5v-3h3C10.5 5.5 11 5 12 5z"/></svg>';
 
       // Sizes chips with quantities and specific prices
       let sizesHtml = '';
@@ -441,142 +636,95 @@ document.addEventListener('DOMContentLoaded', () => {
   categoryFilter.addEventListener('change', renderCatalog);
 
   // ==========================================
-  // 6. IMAGE COMPRESSION & DROPZONES
+  // 6. LIENS LUNACY (aucun fichier stocké)
   // ==========================================
-  // MAX 500px wide, quality 0.65 — optimise agressivement pour Firestore (< 200KB base64)
-  function compressImage(file, maxWidth = 500, quality = 0.65) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-
-          // Toujours redimensionner si plus grand que maxWidth
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          // Fond blanc pour eviter transparence PNG noire en JPEG
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Toujours forcer WebP ou JPEG pour avoir la meilleure compression
-          // Ne jamais garder PNG non compresse
-          const webp = canvas.toDataURL('image/webp', quality);
-          if (webp.startsWith('data:image/webp')) {
-            resolve(webp); // WebP: le plus leger
-          } else {
-            // Fallback JPEG si WebP non supporte
-            resolve(canvas.toDataURL('image/jpeg', quality));
-          }
-        };
-        img.onerror = () => resolve(e.target.result);
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve('');
-      reader.readAsDataURL(file);
-    });
+  function normalizeImageLink(raw) {
+    if (!raw) return '';
+    let url = String(raw).trim().replace(/^["']|["']$/g, '');
+    const markdown = url.match(/\((https?:\/\/[^)\s]+)\)/);
+    if (markdown) url = markdown[1];
+    return url;
   }
 
-  // Verifie la taille d'une image base64 en KB
-  function getBase64SizeKB(base64str) {
-    if (!base64str) return 0;
-    const base64Data = base64str.split(',')[1] || base64str;
-    return Math.round((base64Data.length * 3) / 4 / 1024);
+  function isHttpImageLink(value) {
+    return /^https?:\/\//i.test(normalizeImageLink(value));
   }
 
   imageSlots.forEach(slot => {
     const slotType = slot.dataset.slot;
-    const dropzone = slot.querySelector('.slot-dropzone');
-    const fileInput = slot.querySelector('.slot-file-input');
+    const urlInput = slot.querySelector('.slot-url-input');
     const emptyView = slot.querySelector('.slot-empty');
     const previewView = slot.querySelector('.slot-preview');
     const previewImg = slot.querySelector('.slot-preview img');
     const removeBtn = slot.querySelector('.slot-remove-btn');
 
-    // Click to upload
-    dropzone.addEventListener('click', (e) => {
-      if (e.target !== removeBtn && !currentImages[slotType]) {
-        fileInput.click();
+    const applyLink = (raw) => {
+      const url = normalizeImageLink(raw);
+      if (urlInput && urlInput.value !== raw && urlInput.value !== url) {
+        urlInput.value = url;
       }
-    });
-
-    // File input change with auto-compression
-    fileInput.addEventListener('change', async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        const compressedBase64 = await compressImage(file);
-        currentImages[slotType] = compressedBase64;
-        previewImg.src = compressedBase64;
-        emptyView.style.display = 'none';
-        previewView.style.display = 'flex';
+      if (!url) {
+        currentImages[slotType] = '';
+        if (previewImg) previewImg.src = '';
+        if (previewView) previewView.style.display = 'none';
+        if (emptyView) emptyView.style.display = 'flex';
+        return;
       }
-    });
+      currentImages[slotType] = url;
+      if (previewImg) {
+        previewImg.referrerPolicy = 'no-referrer';
+        previewImg.src = url;
+      }
+      if (emptyView) emptyView.style.display = 'none';
+      if (previewView) previewView.style.display = 'flex';
+    };
 
-    // Drag & Drop
-    ['dragenter', 'dragover'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = '#000000';
-        dropzone.style.backgroundColor = '#f1f5f9';
+    if (urlInput) {
+      urlInput.addEventListener('input', () => applyLink(urlInput.value));
+      urlInput.addEventListener('paste', () => {
+        setTimeout(() => applyLink(urlInput.value), 0);
       });
-    });
+    }
 
-    ['dragleave', 'drop'].forEach(name => {
-      dropzone.addEventListener(name, (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = '#cbd5e1';
-        dropzone.style.backgroundColor = '#fafafa';
+    if (previewImg) {
+      previewImg.addEventListener('error', () => {
+        if (!currentImages[slotType]) return;
+        showToast('Ce lien ne s’affiche pas. Exportez l’image Lunacy et copiez le lien direct (https).', 'error');
       });
-    });
+    }
 
-    dropzone.addEventListener('drop', async (e) => {
-      const files = e.dataTransfer.files;
-      if (files && files[0] && files[0].type.startsWith('image/')) {
-        const compressedBase64 = await compressImage(files[0]);
-        currentImages[slotType] = compressedBase64;
-        previewImg.src = compressedBase64;
-        emptyView.style.display = 'none';
-        previewView.style.display = 'flex';
-      }
-    });
-
-    // Remove image
-    removeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      currentImages[slotType] = '';
-      fileInput.value = '';
-      previewImg.src = '';
-      previewView.style.display = 'none';
-      emptyView.style.display = 'flex';
-    });
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (urlInput) urlInput.value = '';
+        applyLink('');
+      });
+    }
   });
 
   function setSlotImage(slotType, src) {
     const slot = document.querySelector(`.admin-image-slot[data-slot="${slotType}"]`);
     if (!slot) return;
+    const urlInput = slot.querySelector('.slot-url-input');
     const emptyView = slot.querySelector('.slot-empty');
     const previewView = slot.querySelector('.slot-preview');
     const previewImg = slot.querySelector('.slot-preview img');
+    const url = isHttpImageLink(src) ? normalizeImageLink(src) : '';
 
-    if (src) {
-      currentImages[slotType] = src;
-      previewImg.src = src;
-      emptyView.style.display = 'none';
-      previewView.style.display = 'flex';
+    currentImages[slotType] = url;
+    if (urlInput) urlInput.value = url;
+
+    if (url) {
+      if (previewImg) {
+        previewImg.referrerPolicy = 'no-referrer';
+        previewImg.src = url;
+      }
+      if (emptyView) emptyView.style.display = 'none';
+      if (previewView) previewView.style.display = 'flex';
     } else {
-      currentImages[slotType] = '';
-      previewImg.src = '';
-      previewView.style.display = 'none';
-      emptyView.style.display = 'flex';
+      if (previewImg) previewImg.src = '';
+      if (previewView) previewView.style.display = 'none';
+      if (emptyView) emptyView.style.display = 'flex';
     }
   }
 
@@ -727,7 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set images
     ['front', 'back'].forEach(slot => {
-      setSlotImage(slot, product.images?.[slot] || '');
+      setSlotImage(slot, productImageSrc(product, slot) || '');
     });
 
     // Set sizes & prices
@@ -773,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
     switchTab('add-product-tab');
   }
 
-  function handleSaveProduct(e) {
+  async function handleSaveProduct(e) {
     if (e) e.preventDefault();
 
     if (!productTitle.value.trim()) {
@@ -814,8 +962,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = isEdit ? editProductId.value : 'prod_' + Date.now();
     const chosenCategory = productCategory.value || (collections[0]?.name || 'Signature');
 
-    // Default visual mockup if no image was uploaded
-    const defaultMockup = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><rect width="400" height="400" fill="%230f172a"/><path d="M120 120 L280 120 L320 200 L270 220 L250 180 L250 340 L150 340 L150 180 L130 220 L80 200 Z" fill="%23000000" stroke="%23334155" stroke-width="2"/><text x="200" y="250" fill="%23ffffff" font-family="sans-serif" font-size="16" font-weight="900" text-anchor="middle" letter-spacing="2">ALLAIN2MARIE</text></svg>';
+    const frontLink = normalizeImageLink(currentImages.front);
+    const backLink = normalizeImageLink(currentImages.back);
+    if (!isHttpImageLink(frontLink)) {
+      showToast('Collez le lien Lunacy de la photo devant (commence par https://)', 'error');
+      return;
+    }
 
     const productData = {
       id,
@@ -826,8 +978,8 @@ document.addEventListener('DOMContentLoaded', () => {
       status: 'published',
       sizes,
       images: {
-        front: currentImages.front || defaultMockup,
-        back: currentImages.back || ''
+        front: frontLink,
+        back: isHttpImageLink(backLink) ? backLink : ''
       },
       updatedAt: new Date().toISOString()
     };
@@ -849,23 +1001,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     saveProducts(products);
 
-    // Sauvegarde Firebase avec verification de taille et feedback
     if (typeof dbSaveProduct === 'function') {
-      // Verifier que les images ne depassent pas ~600KB chacune (limite Firestore ~1MB/doc)
-      const frontSizeKB = getBase64SizeKB(productData.frontImage);
-      const backSizeKB = getBase64SizeKB(productData.backImage);
-      const totalKB = frontSizeKB + backSizeKB + 50; // +50KB pour les autres champs
-
-      if (totalKB > 700) {
-        showToast(`⚠️ Images trop lourdes (${totalKB}KB). Re-uploadez des images plus petites.`, 'error');
-        console.warn('Images trop grandes pour Firestore:', { frontSizeKB, backSizeKB });
-      } else {
-        dbSaveProduct(productData).then(() => {
-          console.log('☁️ Produit synchronise sur Firebase:', productData.id);
-        }).catch(err => {
-          console.error('❌ Erreur Firebase:', err);
-          showToast('⚠️ Sauvegarde Firebase echouee - verifiez votre connexion', 'error');
-        });
+      try {
+        const saved = await dbSaveProduct(productData);
+        if (saved) {
+          const idx = products.findIndex(p => p.id === saved.id);
+          if (idx !== -1) products[idx] = saved;
+          saveProducts(products);
+        }
+        showToast('T-Shirt visible sur tous les appareils');
+      } catch (err) {
+        console.error(' Erreur Firebase:', err);
+        showToast(err.message || 'Enregistré ici seulement — le cloud a échoué.', 'error');
       }
     }
 
@@ -884,18 +1031,38 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 9. DELETE CONFIRMATION MODAL
   // ==========================================
+  let pendingDeleteId = null;
+  let pendingDeleteType = null; // 'product' or 'order'
+  let pendingDeleteOrder = null;
+
   function askDeleteProduct(id) {
     pendingDeleteId = id;
+    pendingDeleteType = 'product';
+    document.getElementById('confirmTitle').textContent = 'Supprimer ce T-Shirt';
+    document.getElementById('confirmDesc').textContent = 'Voulez-vous vraiment supprimer ce T-Shirt du catalogue ? Cette action est irréversible.';
     confirmModal.classList.add('active');
   }
 
-  confirmCancelBtn.addEventListener('click', () => {
-    confirmModal.classList.remove('active');
-    pendingDeleteId = null;
-  });
+  function askDeleteOrder(order) {
+    pendingDeleteOrder = order;
+    pendingDeleteType = 'order';
+    document.getElementById('confirmTitle').textContent = 'Supprimer cette commande';
+    document.getElementById('confirmDesc').textContent = `Voulez-vous vraiment supprimer la commande de ${order.customer?.name || 'ce client'} ? Cette action est irréversible.`;
+    confirmModal.classList.add('active');
+  }
 
-  confirmOkBtn.addEventListener('click', () => {
-    if (pendingDeleteId) {
+  if (confirmCancelBtn) {
+    confirmCancelBtn.addEventListener('click', () => {
+      confirmModal.classList.remove('active');
+      pendingDeleteId = null;
+      pendingDeleteType = null;
+      pendingDeleteOrder = null;
+    });
+  }
+
+  if (confirmOkBtn) {
+    confirmOkBtn.addEventListener('click', () => {
+    if (pendingDeleteType === 'product' && pendingDeleteId) {
       if (typeof dbDeleteProduct === 'function') {
         dbDeleteProduct(pendingDeleteId);
       }
@@ -904,20 +1071,50 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('T-Shirt supprimé du catalogue.');
       confirmModal.classList.remove('active');
       pendingDeleteId = null;
+      pendingDeleteType = null;
       renderCatalog();
       updateMetrics();
+    } else if (pendingDeleteType === 'order' && pendingDeleteOrder) {
+      let allOrders = loadOrders();
+      allOrders = allOrders.filter(o => o.id !== pendingDeleteOrder.id);
+      saveOrders(allOrders);
+      if (typeof dbDeleteOrder === 'function') {
+        dbDeleteOrder(pendingDeleteOrder.id);
+      }
+      showToast('Commande supprimée.');
+      confirmModal.classList.remove('active');
+      pendingDeleteOrder = null;
+      pendingDeleteType = null;
+      renderOrders();
+    }
+  });
+  }
+
+  // Close modal when clicking outside
+  if (confirmModal) {
+    confirmModal.addEventListener('click', (e) => {
+      if (e.target === confirmModal) {
+        confirmModal.classList.remove('active');
+        pendingDeleteId = null;
+        pendingDeleteType = null;
+        pendingDeleteOrder = null;
+      }
+    });
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && confirmModal && confirmModal.classList.contains('active')) {
+      confirmModal.classList.remove('active');
+      pendingDeleteId = null;
+      pendingDeleteType = null;
+      pendingDeleteOrder = null;
     }
   });
 
   // ==========================================
   // 10. ORDERS & DELIVERIES MANAGEMENT
   // ==========================================
-  const ordersTableBody = document.getElementById('ordersTableBody');
-  const emptyOrdersState = document.getElementById('emptyOrdersState');
-  const metricTotalOrders = document.getElementById('metricTotalOrders');
-  const metricTotalSales = document.getElementById('metricTotalSales');
-  const metricPendingDeliveries = document.getElementById('metricPendingDeliveries');
-  const refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
 
   function loadOrders() {
     try {
@@ -953,11 +1150,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (ordersCountBadge) {
       ordersCountBadge.textContent = orders.length;
+      ordersCountBadge.style.display = orders.length > 0 ? 'inline-block' : 'none';
     }
 
     // Metrics
     if (metricTotalOrders) metricTotalOrders.textContent = orders.length;
-    
+
     const totalSales = orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     if (metricTotalSales) metricTotalSales.textContent = formatFCFA(totalSales);
 
@@ -984,52 +1182,99 @@ document.addEventListener('DOMContentLoaded', () => {
       }) : 'Récemment';
 
       const cleanPhone = (order.customer?.phone || '').replace(/[^0-9]/g, '');
-      const itemsListHtml = (order.items || []).map(i => `
-        <div style="font-size: 0.82rem; font-weight: 600; line-height: 1.3;">
-          • ${i.title} <span style="color: #64748b;">(x${i.qty})</span>
-        </div>
-      `).join('');
+      const customerEmail = order.customer?.email || '';
 
-      const waMessage = encodeURIComponent(`Bonjour ${order.customer?.name || ''}, nous avons bien reçu votre commande ALLAIN2MARIE (${formatFCFA(order.total)}) pour livraison à ${order.customer?.city || ''}. Votre colis est en cours de préparation.`);
+      // Si pas de numéro de téléphone valide, masquer le bouton WhatsApp
+      if (!cleanPhone || cleanPhone.length < 8) {
+        waMessage = '';
+      }
+
+      // Si pas d'email valide, masquer le bouton Email
+      if (!customerEmail || !customerEmail.includes('@')) {
+        emailMessage = '';
+      }
+
+      // Enhanced items display with sizes and individual prices
+      const itemsListHtml = (order.items || []).map(i => {
+        const sizeInfo = i.size ? `<span style="color: #64748b; font-size: 0.75rem;">[Taille: ${i.size}]</span>` : '';
+        const priceInfo = i.price ? `<span style="color: #000; font-weight: 700;">${formatFCFA(i.price)}</span>` : '';
+        return `
+          <div style="font-size: 0.8rem; font-weight: 600; line-height: 1.4; margin-bottom: 4px; padding: 4px 6px; background: #f8fafc; border-radius: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>• ${i.title} <span style="color: #64748b;">x${i.qty}</span></span>
+              ${priceInfo}
+            </div>
+            ${sizeInfo}
+          </div>
+        `;
+      }).join('');
+
+      // Payment info
+      const paymentMethod = order.paymentMethod || 'Wave Business';
+      
+      // Promo code info
+      const promoInfo = order.promoCode ? `<div style="font-size: 0.7rem; color: #16a34a; font-weight: 700; margin-top: 2px;">Code: ${order.promoCode}</div>` : '';
+      const discountInfo = order.discountAmount ? `<div style="font-size: 0.7rem; color: #dc2626; font-weight: 700;">-${formatFCFA(order.discountAmount)}</div>` : '';
+      const subtotal = order.subtotal || order.total;
+
+      const itemsSummary = (order.items || []).map(i => `${i.title} (Taille: ${i.size || 'M'}, x${i.qty}) - ${formatFCFA((i.price || 0) * (i.qty || 1))}`).join('\n');
+      const waMessage = encodeURIComponent(`Bonjour ${order.customer?.name || ''}\n\nNous avons bien reçu votre commande ALLAIN2MARIE (N°${order.id || 'CMD'}) !\n\nDétails de votre commande :\n${itemsSummary}\n\nTotal : ${formatFCFA(order.total)}\nLivraison : ${order.customer?.city || 'Non spécifié'}\nAdresse : ${order.customer?.address || 'Non spécifié'}\nStatut : ${order.deliveryStatus || 'En attente'}\n\nVotre colis est en cours de préparation. Nous vous contacterons bientôt pour confirmer la livraison.\n\nMerci pour votre confiance !\n\nALLAIN2MARIE`);
+
+      const emailMessage = encodeURIComponent(`Bonjour ${order.customer?.name || ''},\n\nNous avons bien reçu votre commande ALLAIN2MARIE (N°${order.id || 'CMD'}) !\n\nDétails de votre commande :\n${itemsSummary.replace(/%0A/g, '\n')}\n\nTotal : ${formatFCFA(order.total)}\nLivraison : ${order.customer?.city || 'Non spécifié'}\nAdresse : ${order.customer?.address || 'Non spécifié'}\nStatut : ${order.deliveryStatus || 'En attente'}\n\nVotre colis est en cours de préparation. Nous vous contacterons bientôt pour confirmer la livraison.\n\nMerci pour votre confiance !\n\nALLAIN2MARIE`);
 
       tr.innerHTML = `
         <td>
-          <div style="font-weight: 800; color: #000;">${order.id || ('CMD-' + (idx + 1))}</div>
-          <div style="font-size: 0.75rem; color: #64748b;">${dateStr}</div>
+          <div style="font-weight: 800; color: #000; font-size: 0.85rem;">${order.id || ('CMD-' + (idx + 1))}</div>
+          <div style="font-size: 0.7rem; color: #64748b;">${dateStr}</div>
         </td>
         <td>
-          <div style="font-weight: 800; color: #000;">${order.customer?.name || 'Client Inconnu'}</div>
+          <div style="font-weight: 800; color: #000; font-size: 0.85rem;">${order.customer?.name || 'Client Inconnu'}</div>
+          <div style="font-size: 0.7rem; color: #64748b;">${order.customer?.email || '-'}</div>
         </td>
         <td>
-          <a href="tel:${order.customer?.phone || ''}" style="color: #000; font-weight: 700; text-decoration: none;">
-            📞 ${order.customer?.phone || '-'}
+          <a href="tel:${order.customer?.phone || ''}" style="color: #000; font-weight: 700; text-decoration: none; font-size: 0.8rem;">
+            ${order.customer?.phone || '-'}
           </a>
         </td>
         <td>
-          <div style="font-weight: 700; color: #000;">📍 ${order.customer?.city || '-'}</div>
-          <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">${order.customer?.address || '-'}</div>
+          <div style="font-weight: 700; color: #000; font-size: 0.8rem;">${order.customer?.city || '-'}</div>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px; line-height: 1.2;">${order.customer?.address || '-'}</div>
         </td>
         <td>
           ${itemsListHtml}
         </td>
         <td>
-          <div style="font-weight: 900; color: #000;">${formatFCFA(order.total)}</div>
-          <div style="font-size: 0.72rem; color: #16a34a; font-weight: 700;">Wave Business</div>
+          <div style="font-size: 0.8rem; font-weight: 700;">${paymentMethod}</div>
+          ${promoInfo}
+        </td>
+        <td>
+          <div style="font-weight: 900; color: #000; font-size: 0.9rem;">${formatFCFA(order.total)}</div>
+          ${discountInfo}
         </td>
         <td>
           <select class="custom-select order-status-select" data-id="${order.id}" style="font-size: 0.78rem; padding: 4px 8px; border-radius: 6px;">
-            <option value="En attente" ${order.deliveryStatus === 'En attente' || !order.deliveryStatus ? 'selected' : ''}>⏳ En attente</option>
-            <option value="En cours" ${order.deliveryStatus === 'En cours' ? 'selected' : ''}>🚚 En cours</option>
-            <option value="Livré" ${order.deliveryStatus === 'Livré' ? 'selected' : ''}>✅ Livré</option>
+            <option value="En attente" ${order.deliveryStatus === 'En attente' || !order.deliveryStatus ? 'selected' : ''}>En attente</option>
+            <option value="En cours" ${order.deliveryStatus === 'En cours' ? 'selected' : ''}>En cours</option>
+            <option value="Livré" ${order.deliveryStatus === 'Livré' ? 'selected' : ''}>Livré</option>
           </select>
         </td>
         <td style="text-align: right;">
-          <div style="display: inline-flex; gap: 0.4rem;">
-            <a href="https://wa.me/${cleanPhone}?text=${waMessage}" target="_blank" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem; color: #16a34a; border-color: #86efac;" title="Écrire sur WhatsApp">
-              📲 WhatsApp
+          <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end;">
+            <button class="btn btn-outline view-order-btn" data-id="${order.id}" style="padding: 3px 6px; font-size: 0.7rem;" title="Voir le détail">
+              👁
+            </button>
+            ${cleanPhone && cleanPhone.length >= 8 ? `
+            <a href="https://wa.me/${cleanPhone}?text=${waMessage}" target="_blank" class="btn btn-outline" style="padding: 3px 6px; font-size: 0.7rem; color: #16a34a; border-color: #86efac;" title="Écrire sur WhatsApp">
+              💬
             </a>
-            <button class="btn btn-outline delete-order-btn" data-id="${order.id}" style="padding: 4px 8px; font-size: 0.75rem; color: #ef4444; border-color: #fecaca;" title="Supprimer">
-              🗑️
+            ` : ''}
+            ${customerEmail && customerEmail.includes('@') ? `
+            <a href="mailto:${customerEmail}?subject=Confirmation de commande ALLAIN2MARIE&body=${emailMessage}" class="btn btn-outline" style="padding: 3px 6px; font-size: 0.7rem; color: #2563eb; border-color: #93c5fd;" title="Envoyer par email">
+              ✉
+            </a>
+            ` : ''}
+            <button class="btn btn-outline delete-order-btn" data-id="${order.id}" style="padding: 3px 6px; font-size: 0.7rem; color: #ef4444; border-color: #fecaca;" title="Supprimer">
+              🗑
             </button>
           </div>
         </td>
@@ -1050,18 +1295,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
+      // View order detail listener
+      tr.querySelector('.view-order-btn')?.addEventListener('click', () => {
+        showOrderDetail(order);
+      });
+
       // Delete order listener
       tr.querySelector('.delete-order-btn')?.addEventListener('click', () => {
-        if (confirm(`Voulez-vous supprimer la commande de ${order.customer?.name || ''} ?`)) {
-          let allOrders = loadOrders();
-          allOrders = allOrders.filter(o => o.id !== order.id);
-          saveOrders(allOrders);
-          if (typeof dbDeleteOrder === 'function') {
-            dbDeleteOrder(order.id);
-          }
-          showToast('Commande supprimée.');
-          renderOrders();
-        }
+        askDeleteOrder(order);
       });
 
       ordersTableBody.appendChild(tr);
@@ -1069,12 +1310,143 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (refreshOrdersBtn) {
-    refreshOrdersBtn.addEventListener('click', async () => {
-      if (typeof dbGetOrders === 'function') {
-        await dbGetOrders();
-      }
+    refreshOrdersBtn.addEventListener('click', () => {
+      console.log('Bouton Actualiser cliqué');
+      // Recharger immédiatement depuis localStorage (rapide)
+      orders = loadOrders();
       renderOrders();
       showToast('Commandes actualisées !');
+
+      // Synchroniser avec Firebase en arrière-plan (sans bloquer)
+      if (typeof dbGetOrders === 'function') {
+        setTimeout(async () => {
+          try {
+            await dbGetOrders();
+            orders = loadOrders();
+            renderOrders();
+            showToast('Synchronisation Firebase terminée');
+          } catch (e) {
+            console.error('Erreur de synchronisation Firebase:', e);
+          }
+        }, 100);
+      }
+    });
+  } else {
+    console.error('Bouton refreshOrdersBtn non trouvé');
+  }
+
+  // ==========================================
+  // ORDER DETAIL MODAL
+  // ==========================================
+  const orderDetailModal = document.getElementById('orderDetailModal');
+  const closeOrderDetailModalBtn = document.getElementById('closeOrderDetailModalBtn');
+  const orderDetailTitle = document.getElementById('orderDetailTitle');
+  const orderDetailContent = document.getElementById('orderDetailContent');
+
+  function showOrderDetail(order) {
+    if (!order) return;
+
+    const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('fr-FR', {
+      day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+    }) : 'Récemment';
+
+    const itemsListHtml = (order.items || []).map(i => {
+      const sizeInfo = i.size ? `<span style="color: #64748b; font-size: 0.85rem;">Taille: ${i.size}</span>` : '';
+      const priceInfo = i.price ? `<span style="color: #000; font-weight: 700;">${formatFCFA(i.price)}</span>` : '';
+      return `
+        <div style="font-size: 0.9rem; font-weight: 600; line-height: 1.5; margin-bottom: 8px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>• ${i.title} <span style="color: #64748b;">x${i.qty}</span></span>
+            ${priceInfo}
+          </div>
+          ${sizeInfo}
+        </div>
+      `;
+    }).join('');
+
+    const promoInfo = order.promoCode ? `<div style="font-size: 0.85rem; color: #16a34a; font-weight: 700; margin-top: 4px;">Code promo: ${order.promoCode}</div>` : '';
+    const discountInfo = order.discountAmount ? `<div style="font-size: 0.85rem; color: #dc2626; font-weight: 700;">Remise: -${formatFCFA(order.discountAmount)}</div>` : '';
+
+    orderDetailTitle.textContent = `Commande ${order.id || 'N/A'}`;
+    orderDetailContent.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Numéro & Date</div>
+          <div style="font-weight: 800; color: #000; font-size: 1rem;">${order.id || 'N/A'}</div>
+          <div style="font-size: 0.85rem; color: #64748b;">${dateStr}</div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Statut</div>
+          <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${order.deliveryStatus || 'En attente'}</div>
+        </div>
+      </div>
+
+      <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #e2e8f0;">
+        <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Informations Client</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Nom</div>
+            <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${order.customer?.name || '-'}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Email</div>
+            <div style="font-weight: 600; color: #000; font-size: 0.85rem;">${order.customer?.email || '-'}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Téléphone</div>
+            <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${order.customer?.phone || '-'}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Ville</div>
+            <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${order.customer?.city || '-'}</div>
+          </div>
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <div style="font-size: 0.75rem; color: #64748b;">Adresse de livraison</div>
+          <div style="font-weight: 600; color: #000; font-size: 0.85rem; line-height: 1.4;">${order.customer?.address || '-'}</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Articles Commandés</div>
+        ${itemsListHtml || '<div style="color: #64748b; font-size: 0.85rem;">Aucun article</div>'}
+      </div>
+
+      <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Paiement & Total</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Méthode de paiement</div>
+            <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${order.paymentMethod || 'Wave Business'}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.75rem; color: #64748b;">Sous-total</div>
+            <div style="font-weight: 700; color: #000; font-size: 0.9rem;">${formatFCFA(order.subtotal || order.total)}</div>
+          </div>
+        </div>
+        ${promoInfo}
+        ${discountInfo}
+        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;">
+          <div style="font-size: 0.75rem; color: #64748b;">Total à payer</div>
+          <div style="font-weight: 900; color: #000; font-size: 1.2rem;">${formatFCFA(order.total)}</div>
+        </div>
+      </div>
+    `;
+
+    if (orderDetailModal) orderDetailModal.classList.add('active');
+  }
+
+  if (closeOrderDetailModalBtn) {
+    closeOrderDetailModalBtn.addEventListener('click', () => {
+      if (orderDetailModal) orderDetailModal.classList.remove('active');
+    });
+  }
+
+  if (orderDetailModal) {
+    orderDetailModal.addEventListener('click', (e) => {
+      if (e.target === orderDetailModal) {
+        orderDetailModal.classList.remove('active');
+      }
     });
   }
 
@@ -1149,27 +1521,30 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof initFirebaseDB === 'function') initFirebaseDB();
       updateCloudStatusUI();
       closeFirebaseModal();
-      showToast('⚡ Base de données Cloud Firebase configurée avec succès !');
+      showToast('Base de données Cloud Firebase configurée avec succès !');
 
-      // Sync existing products to cloud — avec verification de taille
       if (typeof dbSaveProduct === 'function') {
-        let synced = 0;
-        let skipped = 0;
-        products.forEach(p => {
-          const totalKB = getBase64SizeKB(p.frontImage) + getBase64SizeKB(p.backImage) + 50;
-          if (totalKB <= 700) {
-            dbSaveProduct(p);
-            synced++;
-          } else {
-            skipped++;
-            console.warn('Produit trop lourd pour Firebase (images a re-uploader):', p.name, totalKB + 'KB');
+        (async () => {
+          let synced = 0;
+          let skipped = 0;
+          for (const p of products) {
+            try {
+              const saved = await dbSaveProduct(p);
+              const idx = products.findIndex(item => item.id === p.id);
+              if (idx !== -1 && saved) products[idx] = saved;
+              synced++;
+            } catch (err) {
+              skipped++;
+              console.warn('Produit non synchronisé:', p.title, err);
+            }
           }
-        });
-        if (skipped > 0) {
-          showToast(`⚠️ ${synced} produits synchronises, ${skipped} trop lourds (re-editez-les pour recompresser)`, 'warning');
-        } else {
-          showToast(`☁️ ${synced} produits synchronises sur Firebase !`);
-        }
+          saveProducts(products);
+          if (skipped > 0) {
+            showToast(`${synced} produits synchronisés, ${skipped} en échec`, 'warning');
+          } else {
+            showToast(`${synced} produits visibles sur tous les appareils`);
+          }
+        })();
       }
     });
   }
@@ -1177,19 +1552,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 12. COLLECTIONS & CATEGORIES MANAGEMENT
   // ==========================================
-  const collectionsTableBody = document.getElementById('collectionsTableBody');
-  const openAddCollectionModalBtn = document.getElementById('openAddCollectionModalBtn');
-  const manageCollectionsQuickBtn = document.getElementById('manageCollectionsQuickBtn');
-  const addNewCollectionQuickBtn = document.getElementById('addNewCollectionQuickBtn');
-  const collectionModal = document.getElementById('collectionModal');
-  const closeCollectionModalBtn = document.getElementById('closeCollectionModalBtn');
-  const cancelCollectionModalBtn = document.getElementById('cancelCollectionModalBtn');
-  const collectionForm = document.getElementById('collectionForm');
-  const collectionModalTitle = document.getElementById('collectionModalTitle');
-  const editCollectionId = document.getElementById('editCollectionId');
-  const colNameInput = document.getElementById('colNameInput');
-  const colCodeInput = document.getElementById('colCodeInput');
-  const colDescInput = document.getElementById('colDescInput');
+
+  function initCollectionsElements() {
+    collectionsTableBody = document.getElementById('collectionsTableBody');
+    openAddCollectionModalBtn = document.getElementById('openAddCollectionModalBtn');
+    manageCollectionsQuickBtn = document.getElementById('manageCollectionsQuickBtn');
+    addNewCollectionQuickBtn = document.getElementById('addNewCollectionQuickBtn');
+    collectionModal = document.getElementById('collectionModal');
+    closeCollectionModalBtn = document.getElementById('closeCollectionModalBtn');
+    cancelCollectionModalBtn = document.getElementById('cancelCollectionModalBtn');
+    collectionForm = document.getElementById('collectionForm');
+    collectionModalTitle = document.getElementById('collectionModalTitle');
+    editCollectionId = document.getElementById('editCollectionId');
+    colNameInput = document.getElementById('colNameInput');
+    colCodeInput = document.getElementById('colCodeInput');
+    colDescInput = document.getElementById('colDescInput');
+
+    console.log('Collections elements:', {
+      openAddCollectionModalBtn: !!openAddCollectionModalBtn,
+      collectionModal: !!collectionModal,
+      collectionForm: !!collectionForm
+    });
+  }
 
   function populateCategoryDropdowns() {
     if (categoryFilter) {
@@ -1295,16 +1679,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const count = products.filter(p => (p.category || '').toLowerCase() === (col.name || '').toLowerCase()).length;
     let confirmMsg = `Voulez-vous vraiment supprimer la collection "${col.name}" ?`;
     if (count > 0) {
-      confirmMsg += `\n⚠️ Attention : ${count} t-shirt(s) sont actuellement associés à cette collection.`;
+      confirmMsg += `\n Attention : ${count} t-shirt(s) sont actuellement associés à cette collection.`;
     }
 
     if (confirm(confirmMsg)) {
       collections = collections.filter(c => c.id !== col.id && c.name !== col.name);
+      
+      // Sauvegarder dans localStorage immédiatement
+      localStorage.setItem('ALLAIN2MARIE_COLLECTIONS', JSON.stringify(collections));
+      
+      // Synchroniser avec Firebase si disponible
       if (typeof dbSaveCollections === 'function') {
         dbSaveCollections(collections);
-      } else {
-        localStorage.setItem('ALLAIN2MARIE_COLLECTIONS', JSON.stringify(collections));
       }
+      
       populateCategoryDropdowns();
       renderCollectionsTable();
       renderCatalog();
@@ -1312,19 +1700,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (openAddCollectionModalBtn) openAddCollectionModalBtn.addEventListener('click', () => openCollectionModal());
-  if (manageCollectionsQuickBtn) manageCollectionsQuickBtn.addEventListener('click', () => switchTab('collections-tab'));
-  if (addNewCollectionQuickBtn) addNewCollectionQuickBtn.addEventListener('click', () => openCollectionModal());
-  if (closeCollectionModalBtn) closeCollectionModalBtn.addEventListener('click', closeCollectionModal);
-  if (cancelCollectionModalBtn) cancelCollectionModalBtn.addEventListener('click', closeCollectionModal);
-  if (collectionModal) {
-    collectionModal.addEventListener('click', (e) => {
-      if (e.target === collectionModal) closeCollectionModal();
-    });
-  }
+  function initCollectionsEventListeners() {
+    if (openAddCollectionModalBtn) {
+      openAddCollectionModalBtn.addEventListener('click', (e) => {
+        console.log('Bouton Nouvelle Collection cliqué');
+        e.preventDefault();
+        openCollectionModal();
+      });
+    } else {
+      console.error('Bouton openAddCollectionModalBtn non trouvé');
+    }
 
-  if (collectionForm) {
-    collectionForm.addEventListener('submit', (e) => {
+    if (manageCollectionsQuickBtn) manageCollectionsQuickBtn.addEventListener('click', () => switchTab('collections-tab'));
+    if (addNewCollectionQuickBtn) addNewCollectionQuickBtn.addEventListener('click', () => openCollectionModal());
+    if (closeCollectionModalBtn) closeCollectionModalBtn.addEventListener('click', closeCollectionModal);
+    if (cancelCollectionModalBtn) cancelCollectionModalBtn.addEventListener('click', closeCollectionModal);
+    if (collectionModal) {
+      collectionModal.addEventListener('click', (e) => {
+        if (e.target === collectionModal) closeCollectionModal();
+      });
+    }
+
+    if (collectionForm) {
+      // Réinitialiser les références aux éléments du formulaire
+      editCollectionId = document.getElementById('editCollectionId');
+      colNameInput = document.getElementById('colNameInput');
+      colCodeInput = document.getElementById('colCodeInput');
+      colDescInput = document.getElementById('colDescInput');
+
+      collectionForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const id = editCollectionId ? editCollectionId.value.trim() : '';
       const name = colNameInput.value.trim();
@@ -1382,6 +1786,13 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCatalog();
       closeCollectionModal();
     });
+    }
+  }
+
+  // Initialiser les éléments et événements des collections après le chargement du DOM
+  function initCollectionsManagement() {
+    initCollectionsElements();
+    initCollectionsEventListeners();
   }
 
   // ==========================================
@@ -1550,6 +1961,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ==========================================
+  // 8. NEWSLETTER SUBSCRIPTIONS MANAGEMENT
+  // ==========================================
+  // Newsletter functionality removed
+  // ==========================================
+
   updateCloudStatusUI();
 
   // Initial render
@@ -1573,11 +1990,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (typeof dbGetProducts === 'function') {
-    dbGetProducts().then(cloudProds => {
+    dbGetProducts().then(async (cloudProds) => {
       if (cloudProds && cloudProds.length > 0) {
         products = cloudProds;
         renderCatalog();
         updateMetrics();
+      }
+
+      const withLunacyLinks = products.filter(p => isHttpImageLink(productImageSrc(p, 'front')));
+      if (withLunacyLinks.length && typeof dbSaveProduct === 'function') {
+        for (const p of withLunacyLinks) {
+          try {
+            const saved = await dbSaveProduct(p);
+            const idx = products.findIndex(item => item.id === p.id);
+            if (idx !== -1 && saved) products[idx] = saved;
+          } catch (e) {
+            console.warn('Sync auto impossible pour', p.title, e);
+          }
+        }
+        saveProducts(products);
+        renderCatalog();
       }
     }).catch(() => {});
   }

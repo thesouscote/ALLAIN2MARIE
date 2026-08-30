@@ -12,18 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const authFormsView   = document.getElementById('authFormsView');
 
   // logged-in elements
-  const userAvatarBig        = document.getElementById('userAvatarBig');
-  const userAvatarPlaceholder= document.getElementById('userAvatarPlaceholder');
-  const userNameBig          = document.getElementById('userNameBig');
-  const userEmailSmall       = document.getElementById('userEmailSmall');
-  const userLogoutBtn        = document.getElementById('userLogoutBtn');
-  const userOrdersList       = document.getElementById('userOrdersList');
+  const userAvatar        = document.getElementById('userAvatar');
+  const userName          = document.getElementById('userName');
+  const userEmail         = document.getElementById('userEmail');
+  const userLogoutBtn     = document.getElementById('userLogoutBtn');
+  const userOrdersList    = document.getElementById('userOrdersList');
 
   // tabs
   const tabLogin   = document.getElementById('tabLogin');
   const tabSignup  = document.getElementById('tabSignup');
-  const panelLogin = document.getElementById('panelLogin');
-  const panelSignup= document.getElementById('panelSignup');
 
   // forms
   const loginForm       = document.getElementById('loginForm');
@@ -32,61 +29,137 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitLoginBtn  = document.getElementById('submitLoginBtn');
   const submitSignupBtn = document.getElementById('submitSignupBtn');
 
+  // inputs
+  const loginEmailInput    = document.getElementById('loginEmail');
+  const loginPasswordInput = document.getElementById('loginPassword');
+  const signupPasswordInput = document.getElementById('signupPassword');
+
+  // password toggles
+  const toggleLoginPassword  = document.getElementById('toggleLoginPassword');
+  const toggleSignupPassword = document.getElementById('toggleSignupPassword');
+  const forgotPasswordLink   = document.getElementById('forgotPasswordLink');
+
   // ── Helpers ───────────────────────────────────────────────
-  function showAlert(msg) {
-    authAlert.style.display = 'flex';
+  function showAlert(msg, type = 'error') {
+    authAlert.classList.remove('success');
+    if (type === 'success') {
+      authAlert.classList.add('success');
+    }
+    authAlert.classList.add('show');
     authAlertMsg.textContent = msg;
   }
 
   function hideAlert() {
-    authAlert.style.display = 'none';
+    authAlert.classList.remove('show', 'success');
   }
 
-  function setLoading(btn, loading, defaultHTML) {
+  function setLoading(btn, loading, defaultText) {
     btn.disabled = loading;
-    btn.innerHTML = loading
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 0.8s linear infinite"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg><span>Chargement...</span>`
-      : defaultHTML;
+    btn.textContent = loading ? 'Chargement...' : defaultText;
   }
 
   function formatFCFA(n) {
     return new Intl.NumberFormat('fr-FR').format(n) + ' FCFA';
   }
 
+  // ── Password Toggle ────────────────────────────────────────
+  function togglePasswordVisibility(input, toggleBtn) {
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+    
+    // Change icon based on visibility
+    if (type === 'text') {
+      toggleBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a11.64 11.64 0 0 1 5.94-6.06M1 1l22 22"></path>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a11.64 11.64 0 0 1-5.94 6.06"></path>
+        </svg>
+      `;
+    } else {
+      toggleBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      `;
+    }
+  }
+
+  if (toggleLoginPassword && loginPasswordInput) {
+    toggleLoginPassword.addEventListener('click', () => {
+      togglePasswordVisibility(loginPasswordInput, toggleLoginPassword);
+    });
+  }
+
+  if (toggleSignupPassword && signupPasswordInput) {
+    toggleSignupPassword.addEventListener('click', () => {
+      togglePasswordVisibility(signupPasswordInput, toggleSignupPassword);
+    });
+  }
+
+  // ── Forgot Password ──────────────────────────────────────
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail')?.value || '';
+      if (!email) {
+        showAlert('Veuillez entrer votre adresse email d\'abord.');
+        document.getElementById('loginEmail')?.focus();
+        return;
+      }
+      
+      if (typeof firebase !== 'undefined' && firebase.auth) {
+        firebase.auth().sendPasswordResetEmail(email)
+          .then(() => {
+            showAlert('Un email de réinitialisation a été envoyé à ' + email, 'success');
+          })
+          .catch((err) => {
+            if (err.code === 'auth/user-not-found') {
+              showAlert('Aucun compte trouvé avec cet email.');
+            } else if (err.code === 'auth/invalid-email') {
+              showAlert('Format d\'email invalide.');
+            } else {
+              showAlert('Erreur: ' + err.message);
+            }
+          });
+      } else {
+        showAlert('Firebase non disponible pour la réinitialisation.');
+      }
+    });
+  }
+
   // ── Tabs ─────────────────────────────────────────────────
   tabLogin.addEventListener('click', () => {
     tabLogin.classList.add('active');
     tabSignup.classList.remove('active');
-    panelLogin.classList.add('active');
-    panelSignup.classList.remove('active');
+    loginForm.classList.add('active');
+    signupForm.classList.remove('active');
     hideAlert();
   });
 
   tabSignup.addEventListener('click', () => {
     tabSignup.classList.add('active');
     tabLogin.classList.remove('active');
-    panelSignup.classList.add('active');
-    panelLogin.classList.remove('active');
+    signupForm.classList.add('active');
+    loginForm.classList.remove('active');
     hideAlert();
   });
 
   // ── Firebase Auth state ───────────────────────────────────
   function onUserLoggedIn(user) {
     hideAlert();
-    loggedInView.style.display  = 'block';
+    loggedInView.classList.add('show');
     authFormsView.style.display = 'none';
 
     const name  = user.displayName || user.email || 'Utilisateur';
     const email = user.email || '';
     const photo = user.photoURL || '';
 
-    userNameBig.textContent   = 'Bonjour, ' + name.split(' ')[0];
-    userEmailSmall.textContent = email;
+    userName.textContent   = 'Bonjour, ' + name.split(' ')[0];
+    userEmail.textContent = email;
 
     if (photo) {
-      userAvatarBig.src = photo;
-      userAvatarBig.style.display = 'block';
-      if (userAvatarPlaceholder) userAvatarPlaceholder.style.display = 'none';
+      userAvatar.innerHTML = `<img src="${photo}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
     }
 
     // Persister en local pour header badge
@@ -97,10 +170,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Afficher les commandes de cet utilisateur
     loadUserOrders(user.uid, email);
+
+    // Show success message if this is a fresh login (not just page reload)
+    const justLoggedIn = sessionStorage.getItem('A2M_JUST_LOGGED_IN');
+    if (justLoggedIn) {
+      showAlert('Connexion réussie !', 'success');
+      sessionStorage.removeItem('A2M_JUST_LOGGED_IN');
+    }
   }
 
   function onUserLoggedOut() {
-    loggedInView.style.display  = 'none';
+    loggedInView.classList.remove('show');
     authFormsView.style.display = 'block';
     localStorage.removeItem('A2M_USER_NAME');
     localStorage.removeItem('A2M_USER_EMAIL');
@@ -110,8 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Load user orders ──────────────────────────────────────
   function loadUserOrders(uid, email) {
-    const allOrders = typeof sanitizeLocalOrders === 'function' 
-      ? sanitizeLocalOrders() 
+    const allOrders = typeof sanitizeLocalOrders === 'function'
+      ? sanitizeLocalOrders()
       : JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
     // Match by email stored in customer info or by uid
     const myOrders = allOrders.filter(o =>
@@ -120,23 +200,23 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     if (myOrders.length === 0) {
-      userOrdersList.innerHTML = '<div class="no-orders-msg">Aucune commande pour le moment.</div>';
+      userOrdersList.innerHTML = '<div class="no-orders">Aucune commande pour le moment</div>';
       return;
     }
 
     userOrdersList.innerHTML = myOrders.map(o => {
       const status = o.deliveryStatus || 'En attente';
-      const statusClass = status === 'Livré' ? 'livré' : (status === 'En cours' ? 'cours' : '');
+      const statusClass = status === 'Livré' ? 'delivered' : (status === 'En cours' ? 'pending' : '');
       const date = o.createdAt ? new Date(o.createdAt).toLocaleDateString('fr-FR') : '';
       return `
-        <div class="user-order-row">
-          <div>
-            <div class="user-order-id">${o.id}</div>
-            <div style="font-size:0.75rem;color:#94a3b8;">${date}</div>
+        <div class="order-item">
+          <div class="order-info">
+            <div class="order-id">${o.id}</div>
+            <div class="order-date">${date}</div>
           </div>
           <div>
-            <div style="font-weight:800;font-size:0.85rem;">${formatFCFA(o.total)}</div>
-            <span class="user-order-status ${statusClass}">${status}</span>
+            <div style="font-weight:700;font-size:0.9rem;">${formatFCFA(o.total)}</div>
+            <span class="order-status ${statusClass}">${status}</span>
           </div>
         </div>
       `;
@@ -147,7 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof firebase !== 'undefined' && firebase.auth) {
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
-        onUserLoggedIn(user);
+        // Vérifier si l'utilisateur est un admin - si oui, ne pas l'afficher comme connecté dans l'espace client
+        if (typeof dbIsAdminUser === 'function' && dbIsAdminUser(user.email)) {
+          console.log('Utilisateur admin détecté, masquage dans l\'espace client');
+          onUserLoggedOut(); // Traiter les admins comme non-connectés dans l'espace client
+        } else {
+          onUserLoggedIn(user); // Seuls les clients réguliers sont affichés comme connectés
+        }
       } else {
         onUserLoggedOut();
       }
@@ -173,23 +259,26 @@ document.addEventListener('DOMContentLoaded', () => {
         showAlert('Firebase Auth non disponible.');
         return;
       }
-      setLoading(googleAuthBtn, true);
+      setLoading(googleAuthBtn, true, 'Google');
       hideAlert();
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       try {
         await firebase.auth().signInWithPopup(provider);
+        sessionStorage.setItem('A2M_JUST_LOGGED_IN', 'true');
         // onAuthStateChanged prend le relais
       } catch (err) {
-        setLoading(googleAuthBtn, false,
-          `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/></svg><span>Continuer avec Google</span>`
-        );
+        setLoading(googleAuthBtn, false, 'Google');
         if (err.code === 'auth/popup-closed-by-user') {
-          showAlert('Connexion annulée.');
+          showAlert('Connexion Google annulée.');
         } else if (err.code === 'auth/unauthorized-domain') {
-          showAlert("Domaine non autorisé : ajoutez '" + window.location.hostname + "' dans Firebase Console > Authentication > Paramètres > Domaines autorisés.");
+          showAlert('Ouvrez le site via http://localhost:8080 (pas 127.0.0.1), ou inscrivez-vous par e-mail.');
+        } else if (err.code === 'auth/operation-not-allowed' || err.code === 'auth/configuration-not-found') {
+          showAlert('Google n’est pas activé dans Firebase. Créez un compte avec e-mail + mot de passe.');
+        } else if (err.code === 'auth/popup-blocked') {
+          showAlert('Popup Google bloquée par le navigateur. Autorisez les popups ou utilisez e-mail.');
         } else {
-          showAlert('Erreur Google : ' + err.message);
+          showAlert('Erreur Google : ' + (err.message || 'impossible de se connecter.'));
         }
       }
     });
@@ -202,18 +291,20 @@ document.addEventListener('DOMContentLoaded', () => {
       hideAlert();
       const email = document.getElementById('loginEmail').value.trim();
       const pass  = document.getElementById('loginPassword').value;
-      setLoading(submitLoginBtn, true, '<span>Se connecter</span>');
+      setLoading(submitLoginBtn, true, 'Se connecter');
 
       if (typeof firebase === 'undefined' || !firebase.auth) {
         showAlert('Firebase Auth non disponible.');
-        setLoading(submitLoginBtn, false, '<span>Se connecter</span>');
+        setLoading(submitLoginBtn, false, 'Se connecter');
         return;
       }
 
       try {
         await firebase.auth().signInWithEmailAndPassword(email, pass);
+        sessionStorage.setItem('A2M_JUST_LOGGED_IN', 'true');
+        // Success message will be shown when onAuthStateChanged fires
       } catch (err) {
-        setLoading(submitLoginBtn, false, '<span>Se connecter</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>');
+        setLoading(submitLoginBtn, false, 'Se connecter');
         if (err.code === 'auth/user-not-found') {
           showAlert('Aucun compte trouvé avec cet e-mail. Inscrivez-vous !');
         } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
@@ -232,13 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
       hideAlert();
       const name  = document.getElementById('signupName').value.trim();
       const email = document.getElementById('signupEmail').value.trim();
-      const phone = document.getElementById('signupPhone').value.trim();
       const pass  = document.getElementById('signupPassword').value;
-      setLoading(submitSignupBtn, true, '<span>Créer mon compte</span>');
+      setLoading(submitSignupBtn, true, 'Créer mon compte');
 
       if (typeof firebase === 'undefined' || !firebase.auth) {
         showAlert('Firebase Auth non disponible.');
-        setLoading(submitSignupBtn, false, '<span>Créer mon compte</span>');
+        setLoading(submitSignupBtn, false, 'Créer mon compte');
         return;
       }
 
@@ -253,14 +343,14 @@ document.addEventListener('DOMContentLoaded', () => {
             uid: cred.user.uid,
             name,
             email,
-            phone: phone || '',
             createdAt: new Date().toISOString()
           });
         }
 
+        sessionStorage.setItem('A2M_JUST_LOGGED_IN', 'true');
         // onAuthStateChanged prend le relais
       } catch (err) {
-        setLoading(submitSignupBtn, false, '<span>Créer mon compte</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>');
+        setLoading(submitSignupBtn, false, 'Créer mon compte');
         if (err.code === 'auth/email-already-in-use') {
           showAlert('Un compte existe déjà avec cet e-mail. Connectez-vous !');
           tabLogin.click();

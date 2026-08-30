@@ -16,8 +16,59 @@ const DEFAULT_FIREBASE_CONFIG = {
   appId: "1:648589896167:web:3bd8a17a73423c07703542"
 };
 
+// Liste des administrateurs autorisés (par email)
+const ADMIN_EMAILS = [
+  'mokepatrickarmel@gmail.com',
+  'allain2marie@gmail.com',
+  'thesouscote@gmail.com',
+  // Ajoutez d'autres emails d'admin ici
+];
+
 let db = null;
 let isFirebaseInitialized = false;
+
+function toCloudImageUrl(value) {
+  if (!value || typeof value !== 'string') return '';
+  let url = value.trim().replace(/^["']|["']$/g, '');
+  const markdown = url.match(/\((https?:\/\/[^)\s]+)\)/);
+  if (markdown) url = markdown[1];
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
+}
+
+function getProductImage(product, slot) {
+  if (!product) return '';
+  if (product.images && product.images[slot]) return product.images[slot];
+  if (slot === 'front') return product.frontImage || '';
+  if (slot === 'back') return product.backImage || '';
+  return '';
+}
+
+function writeLocalProducts(list) {
+  try {
+    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(list));
+  } catch (err) {
+    console.warn('Quota localStorage, cache léger:', err);
+    const light = list.map(p => ({
+      ...p,
+      images: {
+        front: toCloudImageUrl(p.images?.front),
+        back: toCloudImageUrl(p.images?.back)
+      }
+    }));
+    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(light));
+  }
+}
+
+function prepareProductForCloud(product) {
+  const prepared = JSON.parse(JSON.stringify(product || {}));
+  if (!prepared.images) prepared.images = {};
+  prepared.images.front = toCloudImageUrl(getProductImage(prepared, 'front'));
+  prepared.images.back = toCloudImageUrl(getProductImage(prepared, 'back'));
+  delete prepared.frontImage;
+  delete prepared.backImage;
+  return prepared;
+}
 
 // 1. Initialisation de Firebase
 function initFirebaseDB() {
@@ -31,9 +82,9 @@ function initFirebaseDB() {
       }
       db = firebase.firestore();
       isFirebaseInitialized = true;
-      console.log('⚡ Base de données Firebase Firestore connectée avec succès !');
+      console.log('Base de données Firebase Firestore connectée avec succès !');
     } catch (err) {
-      console.warn('⚠️ Erreur initialisation Firebase, utilisation du mode local:', err);
+      console.warn('Erreur initialisation Firebase, utilisation du mode local:', err);
       isFirebaseInitialized = false;
     }
   } else {
@@ -47,7 +98,6 @@ async function dbGetProducts() {
   if (!isFirebaseInitialized || !db) return local;
 
   try {
-    // PAS de orderBy — evite les erreurs si certains produits n'ont pas createdAt
     const snapshot = await db.collection('products').get();
     const cloudProducts = [];
     snapshot.forEach(doc => {
@@ -55,24 +105,25 @@ async function dbGetProducts() {
     });
 
     if (cloudProducts.length > 0) {
-      // Tri côte client par date décroissante (safe meme sans createdAt)
       cloudProducts.sort((a, b) => {
         const da = a.createdAt || a.updatedAt || '';
         const db2 = b.createdAt || b.updatedAt || '';
         return da < db2 ? 1 : -1;
       });
-      localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(cloudProducts));
+      writeLocalProducts(cloudProducts);
       return cloudProducts;
     }
-    // Firestore vide mais pas d'erreur → retourner le local
   } catch (err) {
-    console.warn('⚠️ Récupération Cloud impossible, utilisation du cache local:', err);
+    console.warn('Récupération Cloud impossible, utilisation du cache local:', err);
   }
   return local;
 }
 
 async function dbSaveProduct(product) {
-  // 1. Sauvegarde locale immédiate
+  if (!product || !product.id) {
+    throw new Error('Produit invalide');
+  }
+
   let local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
   const idx = local.findIndex(p => p.id === product.id);
   if (idx !== -1) {
@@ -80,17 +131,26 @@ async function dbSaveProduct(product) {
   } else {
     local.unshift(product);
   }
-  localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(local));
+  writeLocalProducts(local);
 
-  // 2. Synchronisation Cloud Firebase
-  if (isFirebaseInitialized && db) {
-    try {
-      await db.collection('products').doc(product.id).set(product);
-      console.log('☁️ Produit synchronisé sur Firebase Firestore:', product.id);
-    } catch (err) {
-      console.error('❌ Erreur sauvegarde Cloud:', err);
-    }
+  if (!isFirebaseInitialized || !db) {
+    throw new Error('Firebase non connecté — le t-shirt reste seulement sur cet appareil');
   }
+
+  const cloudProduct = prepareProductForCloud(product);
+  if (!cloudProduct.images.front) {
+    throw new Error('Ajoutez un lien photo (Lunacy) — les images ne sont plus stockées');
+  }
+  await db.collection('products').doc(cloudProduct.id).set(cloudProduct);
+
+  local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+  const cloudIdx = local.findIndex(p => p.id === cloudProduct.id);
+  if (cloudIdx !== -1) local[cloudIdx] = cloudProduct;
+  else local.unshift(cloudProduct);
+  writeLocalProducts(local);
+
+  console.log('Produit synchronisé sur Firebase:', cloudProduct.id);
+  return cloudProduct;
 }
 
 async function dbDeleteProduct(productId) {
@@ -103,9 +163,9 @@ async function dbDeleteProduct(productId) {
   if (isFirebaseInitialized && db) {
     try {
       await db.collection('products').doc(productId).delete();
-      console.log('☁️ Produit supprimé de Firebase Firestore:', productId);
+      console.log('Produit supprimé de Firebase Firestore:', productId);
     } catch (err) {
-      console.error('❌ Erreur suppression Cloud:', err);
+      console.error('Erreur suppression Cloud:', err);
     }
   }
 }
@@ -152,7 +212,7 @@ async function dbGetOrders() {
       return mergedOrders;
     }
   } catch (err) {
-    console.warn('⚠️ Récupération commandes Cloud impossible, cache local utilisé:', err);
+    console.warn('Récupération commandes Cloud impossible, cache local utilisé:', err);
   }
   return local;
 }
@@ -173,9 +233,9 @@ async function dbSaveOrder(order) {
   if (isFirebaseInitialized && db) {
     try {
       await db.collection('orders').doc(order.id).set(order);
-      console.log('☁️ Commande enregistrée dans Firebase Firestore:', order.id);
+      console.log('Commande enregistrée dans Firebase Firestore:', order.id);
     } catch (err) {
-      console.error('❌ Erreur enregistrement commande Cloud:', err);
+      console.error('Erreur enregistrement commande Cloud:', err);
     }
   }
 }
@@ -191,9 +251,9 @@ async function dbUpdateOrderStatus(orderId, newStatus) {
   if (isFirebaseInitialized && db) {
     try {
       await db.collection('orders').doc(orderId).update({ deliveryStatus: newStatus });
-      console.log('☁️ Statut commande mis à jour sur Firebase:', orderId, newStatus);
+      console.log('Statut commande mis à jour sur Firebase:', orderId, newStatus);
     } catch (err) {
-      console.error('❌ Erreur mise à jour statut Cloud:', err);
+      console.error('Erreur mise à jour statut Cloud:', err);
     }
   }
 }
@@ -206,9 +266,9 @@ async function dbDeleteOrder(orderId) {
   if (isFirebaseInitialized && db) {
     try {
       await db.collection('orders').doc(orderId).delete();
-      console.log('☁️ Commande supprimée de Firebase:', orderId);
+      console.log('Commande supprimée de Firebase:', orderId);
     } catch (err) {
-      console.error('❌ Erreur suppression commande Cloud:', err);
+      console.error('Erreur suppression commande Cloud:', err);
     }
   }
 }
@@ -251,7 +311,7 @@ async function dbGetCollections() {
       });
     }
   } catch (err) {
-    console.warn('⚠️ Récupération collections Cloud impossible, cache local utilisé:', err);
+    console.warn('Récupération collections Cloud impossible, cache local utilisé:', err);
   }
   return local;
 }
@@ -265,9 +325,9 @@ async function dbSaveCollections(collections) {
         list: collections,
         updatedAt: new Date().toISOString()
       });
-      console.log('☁️ Collections synchronisées sur Firebase Firestore !');
+      console.log('Collections synchronisées sur Firebase Firestore !');
     } catch (err) {
-      console.error('❌ Erreur sauvegarde collections Cloud:', err);
+      console.error('Erreur sauvegarde collections Cloud:', err);
     }
   }
 }
@@ -303,6 +363,332 @@ async function dbSavePromoCodes(promos) {
       });
     } catch (e) {}
   }
+}
+
+// 6. Gestion des Newsletter Subscriptions
+function dbGetLocalNewsletterSubscriptions() {
+  try {
+    const raw = localStorage.getItem('ALLAIN2MARIE_NEWSLETTER');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify([]));
+  return [];
+}
+
+async function dbGetNewsletterSubscriptions() {
+  const local = dbGetLocalNewsletterSubscriptions();
+  if (!isFirebaseInitialized || !db) return local;
+
+  try {
+    const snapshot = await db.collection('newsletter').get();
+    const cloudSubscriptions = [];
+    snapshot.forEach(doc => {
+      cloudSubscriptions.push({ id: doc.id, ...doc.data() });
+    });
+    
+    if (cloudSubscriptions.length > 0) {
+      // Merge avec local + dedup par email
+      const emailMap = new Map();
+      cloudSubscriptions.forEach(s => { 
+        if (s && s.email) emailMap.set(s.email.toLowerCase(), s); 
+      });
+      local.forEach(s => { 
+        if (s && s.email && !emailMap.has(s.email.toLowerCase())) {
+          emailMap.set(s.email.toLowerCase(), s);
+        }
+      });
+      
+      const mergedSubscriptions = Array.from(emailMap.values())
+        .sort((a, b) => ((a.subscribedAt || '') < (b.subscribedAt || '') ? 1 : -1));
+      
+      localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify(mergedSubscriptions));
+      return mergedSubscriptions;
+    }
+  } catch (err) {
+    console.warn('Récupération newsletter Cloud impossible, cache local utilisé:', err);
+  }
+  return local;
+}
+
+async function dbSubscribeNewsletter(email) {
+  if (!email || !email.includes('@')) {
+    throw new Error('Email invalide');
+  }
+
+  const emailLower = email.toLowerCase();
+  const timestamp = new Date().toISOString();
+  const subscription = {
+    id: 'sub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    email: emailLower,
+    subscribedAt: timestamp,
+    active: true
+  };
+
+  // 1. Sauvegarde locale avec déduplication par email
+  let local = dbGetLocalNewsletterSubscriptions();
+  const existingIndex = local.findIndex(s => s.email.toLowerCase() === emailLower);
+  
+  if (existingIndex !== -1) {
+    // Réactiver si déjà existant
+    local[existingIndex].active = true;
+    local[existingIndex].subscribedAt = timestamp;
+  } else {
+    local.unshift(subscription);
+  }
+  
+  localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify(local));
+
+  // 2. Sauvegarde Cloud Firebase
+  if (isFirebaseInitialized && db) {
+    try {
+      await db.collection('newsletter').doc(subscription.id).set(subscription);
+      console.log('Newsletter enregistrée dans Firebase Firestore:', emailLower);
+    } catch (err) {
+      console.error('Erreur enregistrement newsletter Cloud:', err);
+    }
+  }
+
+  return subscription;
+}
+
+async function dbUnsubscribeNewsletter(email) {
+  const emailLower = email.toLowerCase();
+  
+  // 1. Suppression locale
+  let local = dbGetLocalNewsletterSubscriptions();
+  local = local.filter(s => s.email.toLowerCase() !== emailLower);
+  localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify(local));
+
+  // 2. Suppression Cloud Firebase
+  if (isFirebaseInitialized && db) {
+    try {
+      const snapshot = await db.collection('newsletter').where('email', '==', emailLower).get();
+      snapshot.forEach(doc => {
+        doc.ref.delete();
+      });
+      console.log('Newsletter supprimée de Firebase:', emailLower);
+    } catch (err) {
+      console.error('Erreur suppression newsletter Cloud:', err);
+    }
+  }
+}
+
+async function dbDeleteNewsletterSubscription(subscriptionId) {
+  // 1. Suppression locale
+  let local = dbGetLocalNewsletterSubscriptions();
+  local = local.filter(s => s.id !== subscriptionId);
+  localStorage.setItem('ALLAIN2MARIE_NEWSLETTER', JSON.stringify(local));
+
+  // 2. Suppression Cloud Firebase
+  if (isFirebaseInitialized && db) {
+    try {
+      await db.collection('newsletter').doc(subscriptionId).delete();
+      console.log('Newsletter supprimée de Firebase:', subscriptionId);
+    } catch (err) {
+      console.error('Erreur suppression newsletter Cloud:', err);
+    }
+  }
+}
+
+// 7. Configuration Mailchimp
+const DEFAULT_MAILCHIMP_CONFIG = {
+  apiKey: 'md-WnQPgR39hK_77Wi4H9YHqw',
+  listId: '', // Sera configuré dans l'admin
+  enabled: true // Activé par défaut avec la clé API fournie
+};
+
+function getMailchimpConfig() {
+  try {
+    const saved = localStorage.getItem('ALLAIN2MARIE_MAILCHIMP_CONFIG');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {}
+  return DEFAULT_MAILCHIMP_CONFIG;
+}
+
+function saveMailchimpConfig(config) {
+  localStorage.setItem('ALLAIN2MARIE_MAILCHIMP_CONFIG', JSON.stringify(config));
+}
+
+// Intégration Mailchimp API
+async function subscribeToMailchimp(email, config = null) {
+  const mailchimpConfig = config || getMailchimpConfig();
+  
+  if (!mailchimpConfig.enabled || !mailchimpConfig.apiKey || !mailchimpConfig.listId) {
+    throw new Error('Mailchimp non configuré');
+  }
+
+  // Extraire le serveur de la clé API (format: xxx-usxx)
+  const apiKeyParts = mailchimpConfig.apiKey.split('-');
+  if (apiKeyParts.length < 2) {
+    throw new Error('Clé API Mailchimp invalide');
+  }
+  const server = apiKeyParts[1];
+
+  const url = `https://${server}.api.mailchimp.com/3.0/lists/${mailchimpConfig.listId}/members`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa('anystring:' + mailchimpConfig.apiKey)}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email_address: email,
+        status: 'subscribed',
+        merge_fields: {
+          FNAME: '',
+          LNAME: ''
+        }
+      })
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log('Mailchimp: Abonnement réussi pour', email);
+      return { success: true, data };
+    } else {
+      // Gérer les erreurs spécifiques Mailchimp
+      if (data.title === 'Member Exists') {
+        console.log('Mailchimp: Email déjà existant', email);
+        return { success: true, alreadyExists: true, data };
+      }
+      throw new Error(data.detail || 'Erreur Mailchimp');
+    }
+  } catch (error) {
+    console.error('Erreur Mailchimp:', error);
+    throw error;
+  }
+}
+
+// 8. Gestion des Favoris (Wishlist)
+function dbGetLocalFavorites() {
+  try {
+    const raw = localStorage.getItem('ALLAIN2MARIE_FAVORITES');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify([]));
+  return [];
+}
+
+async function dbGetFavorites() {
+  const local = dbGetLocalFavorites();
+  if (!isFirebaseInitialized || !db) return local;
+
+  try {
+    // Récupérer depuis Firebase si disponible
+    const userId = localStorage.getItem('ALLAIN2MARIE_USER_ID') || 'guest';
+    const snapshot = await db.collection('favorites').doc(userId).get();
+    
+    if (snapshot.exists && snapshot.data().items) {
+      const cloudFavorites = snapshot.data().items;
+      localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify(cloudFavorites));
+      return cloudFavorites;
+    }
+  } catch (err) {
+    console.warn('Récupération favoris Cloud impossible, cache local utilisé:', err);
+  }
+  return local;
+}
+
+async function dbAddFavorite(productId) {
+  if (!productId) {
+    throw new Error('ID produit invalide');
+  }
+
+  let local = dbGetLocalFavorites();
+  
+  // Vérifier si déjà dans les favoris
+  if (local.includes(productId)) {
+    return { success: true, alreadyExists: true };
+  }
+
+  // Ajouter aux favoris
+  local.unshift(productId);
+  localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify(local));
+
+  // Synchroniser avec Firebase
+  if (isFirebaseInitialized && db) {
+    try {
+      const userId = localStorage.getItem('ALLAIN2MARIE_USER_ID') || 'guest';
+      await db.collection('favorites').doc(userId).set({
+        items: local,
+        updatedAt: new Date().toISOString()
+      });
+      console.log('Favori synchronisé sur Firebase:', productId);
+    } catch (err) {
+      console.error('Erreur synchronisation favori Cloud:', err);
+    }
+  }
+
+  return { success: true, alreadyExists: false };
+}
+
+async function dbRemoveFavorite(productId) {
+  if (!productId) {
+    throw new Error('ID produit invalide');
+  }
+
+  let local = dbGetLocalFavorites();
+  local = local.filter(id => id !== productId);
+  localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify(local));
+
+  // Synchroniser avec Firebase
+  if (isFirebaseInitialized && db) {
+    try {
+      const userId = localStorage.getItem('ALLAIN2MARIE_USER_ID') || 'guest';
+      await db.collection('favorites').doc(userId).set({
+        items: local,
+        updatedAt: new Date().toISOString()
+      });
+      console.log('Favori supprimé de Firebase:', productId);
+    } catch (err) {
+      console.error('Erreur suppression favori Cloud:', err);
+    }
+  }
+
+  return { success: true };
+}
+
+function dbIsFavorite(productId) {
+  const local = dbGetLocalFavorites();
+  return local.includes(productId);
+}
+
+// 9. Vérification Admin (sécurisée)
+function dbIsAdminUser(email) {
+  if (!email || typeof email !== 'string') {
+    console.warn('dbIsAdminUser: email invalide ou manquant');
+    return false;
+  }
+  
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  // Validation du format email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(normalizedEmail)) {
+    console.warn('dbIsAdminUser: format email invalide:', normalizedEmail);
+    return false;
+  }
+  
+  const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+  
+  if (!isAdmin) {
+    console.warn('dbIsAdminUser: accès refusé pour email:', normalizedEmail);
+  } else {
+    console.log('dbIsAdminUser: accès autorisé pour email:', normalizedEmail);
+  }
+  
+  return isAdmin;
 }
 
 // Initialisation immédiate au chargement du script

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Sécurité Admin - ALLAIN2MARIE</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    .test-result {
+      margin: 15px 0;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .email-input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 300px;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Test Sécurité Admin ALLAIN2MARIE</h1>
+    
+    <div id="testResults"></div>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+      <h3>Test manuel dbIsAdminUser</h3>
+      <input type="email" id="testEmail" class="email-input" placeholder="Email à tester">
+      <button onclick="testEmail()">Tester email</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="db.js"></script>
+  
+  <script>
+    const testResults = document.getElementById('testResults');
+    
+    function addResult(message, type) {
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = message;
+      testResults.appendChild(div);
+    }
+    
+    function runSecurityTests() {
+      addResult('Démarrage des tests de sécurité...', 'info');
+      
+      // Test 1: Vérifier que la fonction dbIsAdminUser existe
+      if (typeof dbIsAdminUser === 'function') {
+        addResult('Test 1: Fonction dbIsAdminUser disponible', 'success');
+      } else {
+        addResult('Test 1: Fonction dbIsAdminUser NON disponible', 'error');
+        return;
+      }
+      
+      // Test 2: Tester avec email admin autorisé
+      const adminEmail = 'admin@allain2marie.com';
+      if (dbIsAdminUser(adminEmail)) {
+        addResult(`Test 2: Email admin autorisé (${adminEmail}) - ACCÈS AUTORISÉ`, 'success');
+      } else {
+        addResult(`Test 2: Email admin autorisé (${adminEmail}) - ACCÈS REFUSÉ (ERREUR)`, 'error');
+      }
+      
+      // Test 3: Tester avec email non autorisé
+      const unauthorizedEmail = 'test@example.com';
+      if (!dbIsAdminUser(unauthorizedEmail)) {
+        addResult(`Test 3: Email non autorisé (${unauthorizedEmail}) - ACCÈS REFUSÉ (CORRECT)`, 'success');
+      } else {
+        addResult(`Test 3: Email non autorisé (${unauthorizedEmail}) - ACCÈS AUTORISÉ (ERREUR)`, 'error');
+      }
+      
+      // Test 4: Tester avec email invalide
+      const invalidEmail = 'invalid-email';
+      if (!dbIsAdminUser(invalidEmail)) {
+        addResult(`Test 4: Email invalide (${invalidEmail}) - ACCÈS REFUSÉ (CORRECT)`, 'success');
+      } else {
+        addResult(`Test 4: Email invalide (${invalidEmail}) - ACCÈS AUTORISÉ (ERREUR)`, 'error');
+      }
+      
+      // Test 5: Tester avec null
+      if (!dbIsAdminUser(null)) {
+        addResult(`Test 5: Email null - ACCÈS REFUSÉ (CORRECT)`, 'success');
+      } else {
+        addResult(`Test 5: Email null - ACCÈS AUTORISÉ (ERREUR)`, 'error');
+      }
+      
+      // Test 6: Tester avec undefined
+      if (!dbIsAdminUser(undefined)) {
+        addResult(`Test 6: Email undefined - ACCÈS REFUSÉ (CORRECT)`, 'success');
+      } else {
+        addResult(`Test 6: Email undefined - ACCÈS AUTORISÉ (ERREUR)`, 'error');
+      }
+      
+      // Test 7: Vérifier la liste des admins
+      if (typeof ADMIN_EMAILS !== 'undefined' && Array.isArray(ADMIN_EMAILS)) {
+        addResult(`Test 7: Liste ADMIN_EMAILS disponible (${ADMIN_EMAILS.length} admins)`, 'success');
+        addResult(`Admins configurés: ${ADMIN_EMAILS.join(', ')}`, 'info');
+      } else {
+        addResult('Test 7: Liste ADMIN_EMAILS NON disponible', 'error');
+      }
+      
+      addResult('Tests de sécurité terminés!', 'info');
+    }
+    
+    function testEmail() {
+      const email = document.getElementById('testEmail').value.trim();
+      if (!email) {
+        addResult('Veuillez entrer un email à tester', 'info');
+        return;
+      }
+      
+      const result = dbIsAdminUser(email);
+      if (result) {
+        addResult(`${email} - ACCÈS AUTORISÉ`, 'success');
+      } else {
+        addResult(`${email} - ACCÈS REFUSÉ`, 'error');
+      }
+    }
+    
+    // Exécuter les tests automatiquement au chargement
+    window.addEventListener('DOMContentLoaded', runSecurityTests);
+  </script>
+</body>
+</html>

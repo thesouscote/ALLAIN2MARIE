@@ -63,6 +63,20 @@
   flex-wrap: wrap;
 }
 
+.pdp-meta-top .pdp-social-btn {
+  padding: 0.2rem 0.4rem;
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.pdp-meta-top .pdp-social-btn:hover {
+  opacity: 1;
+}
+
+.mobile-share-btn {
+  display: none !important;
+}
+
 .pdp-collection-tag {
   display: inline-flex;
   align-items: center;
@@ -91,7 +105,7 @@
   color: #000000;
   text-transform: uppercase;
   line-height: 1.08;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
 }
 
 .pdp-page-price {
@@ -144,6 +158,45 @@
   gap: 0.85rem;
   align-items: center;
   margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+/* Social Actions (Share) */
+.pdp-social-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.8rem;
+}
+
+.pdp-social-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pdp-social-btn:hover {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.pdp-social-btn svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+}
+
+.pdp-social-btn:hover svg {
+  transform: scale(1.1);
 }
 
 /* Size Selection Section */
@@ -252,5 +305,13 @@
 
   .pdp-page-title {
     font-size: 2.1rem;
+  }
+
+  .pdp-meta-top .pdp-social-btn {
+    display: none;
+  }
+
+  .mobile-share-btn {
+    display: flex;
   }
 }

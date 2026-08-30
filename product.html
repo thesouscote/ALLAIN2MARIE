@@ -16,14 +16,14 @@
   <!-- Header ALLAIN2MARIE -->
   <header class="luxury-header">
     <div class="header-inner">
-      <!-- Left: Back to shop & Search -->
+      <!-- Left: Menu & Search -->
       <div class="header-left">
-        <a href="index.html" class="nav-icon-btn" aria-label="Retour à la boutique" title="Retour aux T-Shirts">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
+        <button class="nav-icon-btn" aria-label="Menu" id="menuBtn">
+          <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="1" y1="4" x2="21" y2="4"></line>
+            <line x1="1" y1="12" x2="21" y2="12"></line>
           </svg>
-        </a>
+        </button>
         <button class="nav-icon-btn" aria-label="Recherche" id="searchBtn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="7"></circle>
@@ -66,10 +66,10 @@
       <!-- Left / Center: 2 T-Shirt Views Side by Side -->
       <div class="pdp-page-gallery" id="pdpGallery">
         <div class="pdp-image-box">
-          <img src="" alt="Vue Avant" class="pdp-page-img" id="pageFrontImg">
+          <img src="" alt="Vue Avant" class="pdp-page-img" id="pageFrontImg" referrerpolicy="no-referrer">
         </div>
         <div class="pdp-image-box" id="pageBackBox">
-          <img src="" alt="Vue Arrière" class="pdp-page-img" id="pageBackImg">
+          <img src="" alt="Vue Arrière" class="pdp-page-img" id="pageBackImg" referrerpolicy="no-referrer">
         </div>
       </div>
 
@@ -79,6 +79,15 @@
         <div class="pdp-meta-top">
           <span class="pdp-collection-tag" id="pageCollection">Signature</span>
           <span class="pdp-sku-code" id="pageSku">A2M-SIG-1000</span>
+          <button class="pdp-social-btn share-btn" id="shareBtn" aria-label="Partager ce produit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+          </button>
         </div>
 
         <h1 class="pdp-page-title" id="pageTitle">11 AVRIL 2011</h1>
@@ -95,6 +104,15 @@
           <div class="pdp-size-header">
             <span class="pdp-size-label">Taille sélectionnée :</span>
             <span class="pdp-size-selected" id="pdpSelectedSizeText">M</span>
+            <button class="pdp-social-btn share-btn mobile-share-btn" id="mobileShareBtn" aria-label="Partager ce produit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </button>
           </div>
           <div class="pdp-size-pills" id="pdpSizePills">
             <!-- Dynamiquement généré via product.js -->
@@ -140,25 +158,11 @@
     </div>
   </main>
 
-  <!-- Newsletter Footer Section (Join our email list) -->
-  <footer class="luxury-footer">
-    <div class="footer-inner">
-      <div class="footer-left">
-        <h3 class="footer-heading">Rejoignez le Club ALLAIN2MARIE</h3>
-        <p class="footer-subheading">Recevez en avant-première nos offres exclusives et nouveaux drops.</p>
-      </div>
-      <div class="footer-right">
-        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Merci pour votre inscription à la newsletter ALLAIN2MARIE !');">
-          <div class="newsletter-input-wrap">
-            <input type="email" class="newsletter-input" placeholder="Votre adresse email" required>
-            <button type="submit" class="newsletter-submit-btn" aria-label="S'inscrire">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </button>
-          </div>
-        </form>
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-copyright">
+        <p>Tous droits réservés à thesouscote</p>
       </div>
     </div>
   </footer>
@@ -238,16 +242,16 @@
 
     <!-- Main Viewport (Center) -->
     <div class="shopify-viewer-main" id="shopifyViewerMain">
-      <img src="" alt="Vue T-Shirt HD" class="shopify-viewer-img" id="viewerMainImg">
+      <img src="" alt="Vue T-Shirt HD" class="shopify-viewer-img" id="viewerMainImg" referrerpolicy="no-referrer">
     </div>
 
     <!-- Right Sidebar Thumbnails (Exactement comme la capture) -->
     <div class="shopify-viewer-thumbs" id="viewerThumbs">
       <div class="shopify-thumb-card active" id="thumbFrontCard" data-idx="0">
-        <img src="" alt="Devant" id="thumbFrontImg">
+        <img src="" alt="Devant" id="thumbFrontImg" referrerpolicy="no-referrer">
       </div>
       <div class="shopify-thumb-card" id="thumbBackCard" data-idx="1">
-        <img src="" alt="Dos" id="thumbBackImg">
+        <img src="" alt="Dos" id="thumbBackImg" referrerpolicy="no-referrer">
       </div>
     </div>
   </div>
@@ -302,6 +306,11 @@
           </div>
 
           <div class="form-group-delivery">
+            <label for="custEmail">Email *</label>
+            <input type="email" id="custEmail" class="delivery-input" placeholder="Ex: jean.kouassi@email.com" required>
+          </div>
+
+          <div class="form-group-delivery">
             <label for="custCity">Commune / Ville *</label>
             <select id="custCity" class="delivery-input" required>
               <option value="">Sélectionnez votre commune...</option>
@@ -338,6 +347,37 @@
       </div>
     </div>
   </div>
+  <!-- NAV DRAWER (Menu Burger) -->
+  <div class="nav-drawer-overlay" id="navDrawerOverlay"></div>
+  <nav class="nav-drawer" id="navDrawer" aria-label="Menu de navigation">
+    <div class="nav-drawer-header">
+      <img src="logo.png" alt="ALLAIN2MARIE" style="height: 28px; object-fit: contain;">
+      <button class="nav-icon-btn" id="closeNavDrawerBtn" aria-label="Fermer le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="nav-drawer-body">
+      <ul class="nav-menu-list" id="navMenuList">
+        <li class="nav-menu-item">
+          <a href="index.html">
+            <span>Tous les T-Shirts</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </a>
+        </li>
+        <!-- Collections dynamiques -->
+        <li class="nav-menu-item">
+          <a href="auth.html">
+            <span>Mon Compte</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
   <!-- LIVE SEARCH MODAL -->
   <div class="search-modal-overlay" id="searchModalOverlay">
     <div class="search-modal-card">
