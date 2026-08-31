@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function handleApplyPromo() {
+  async function handleApplyPromo() {
     if (!promoInput) return;
     const code = promoInput.value.trim().toUpperCase();
     if (!code) {
@@ -425,12 +425,27 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const promos = typeof dbGetPromoCodes === 'function' ? dbGetPromoCodes() : [
-      { code: 'ALLAIN10', type: 'percent', value: 10 },
-      { code: 'VIP20', type: 'percent', value: 20 },
-      { code: 'LIVRAISON', type: 'fixed', value: 1500 },
-      { code: 'A2M5000', type: 'fixed', value: 5000 }
-    ];
+    let promos = [];
+    if (typeof dbGetPromoCodes === 'function') {
+      try {
+        promos = await dbGetPromoCodes();
+      } catch (e) {
+        console.error('Erreur chargement codes promo:', e);
+        promos = [
+          { code: 'ALLAIN10', type: 'percent', value: 10 },
+          { code: 'VIP20', type: 'percent', value: 20 },
+          { code: 'LIVRAISON', type: 'fixed', value: 1500 },
+          { code: 'A2M5000', type: 'fixed', value: 5000 }
+        ];
+      }
+    } else {
+      promos = [
+        { code: 'ALLAIN10', type: 'percent', value: 10 },
+        { code: 'VIP20', type: 'percent', value: 20 },
+        { code: 'LIVRAISON', type: 'fixed', value: 1500 },
+        { code: 'A2M5000', type: 'fixed', value: 5000 }
+      ];
+    }
 
     const match = promos.find(p => p.code.toUpperCase() === code);
     if (match) {
@@ -450,12 +465,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (applyPromoBtn) applyPromoBtn.addEventListener('click', handleApplyPromo);
+  if (applyPromoBtn) applyPromoBtn.addEventListener('click', async () => {
+    await handleApplyPromo();
+  });
   if (promoInput) {
-    promoInput.addEventListener('keydown', (e) => {
+    promoInput.addEventListener('keydown', async (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleApplyPromo();
+        await handleApplyPromo();
       }
     });
   }
