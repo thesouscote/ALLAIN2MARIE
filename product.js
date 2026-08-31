@@ -277,6 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleApplyPromo() {
     if (!promoInput) return;
     const code = promoInput.value.trim().toUpperCase();
+    console.log('handleApplyPromo - code saisi:', code);
+
     if (!code) {
       if (promoFeedback) {
         promoFeedback.className = 'cart-promo-feedback error';
@@ -289,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof dbGetPromoCodes === 'function') {
       try {
         promos = await dbGetPromoCodes();
+        console.log('handleApplyPromo - codes depuis Firebase:', promos);
       } catch (e) {
         console.error('Erreur chargement codes promo:', e);
         promos = [
@@ -307,7 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
     }
 
+    console.log('handleApplyPromo - codes disponibles:', promos);
     const match = promos.find(p => p.code.toUpperCase() === code);
+    console.log('handleApplyPromo - code trouvé:', match);
+
     if (match) {
       activePromo = match;
       sessionStorage.setItem('ALLAIN2MARIE_ACTIVE_PROMO', JSON.stringify(activePromo));
