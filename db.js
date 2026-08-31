@@ -340,14 +340,28 @@ const DEFAULT_PROMOS = [
   { code: 'A2M5000', type: 'fixed', value: 5000, description: '5 000 FCFA de remise' }
 ];
 
-function dbGetPromoCodes() {
+async function dbGetPromoCodes() {
   try {
     const raw = localStorage.getItem('ALLAIN2MARIE_PROMOS');
     if (!raw) {
       localStorage.setItem('ALLAIN2MARIE_PROMOS', JSON.stringify(DEFAULT_PROMOS));
-      return DEFAULT_PROMOS;
     }
-    return JSON.parse(raw);
+    const localPromos = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PROMOS') || '[]');
+
+    // Synchroniser avec Firebase
+    if (isFirebaseInitialized && db) {
+      try {
+        const doc = await db.collection('settings').doc('promos').get();
+        if (doc.exists && doc.data().list) {
+          const cloudPromos = doc.data().list;
+          localStorage.setItem('ALLAIN2MARIE_PROMOS', JSON.stringify(cloudPromos));
+          return cloudPromos;
+        }
+      } catch (e) {
+        console.warn('Erreur synchronisation codes promo Firebase:', e);
+      }
+    }
+    return localPromos;
   } catch (e) {
     return DEFAULT_PROMOS;
   }

@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (tabId === 'collections-tab') {
       renderCollectionsTable();
     } else if (tabId === 'promos-tab') {
-      renderPromosTable();
+      loadPromos();
     }
   }
 
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCollectionsTable();
       }
     } else if (savedTab === 'promos-tab') {
-      renderPromosTable();
+      loadPromos();
     }
   }
 
@@ -1798,12 +1798,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 13. PROMO CODES MANAGEMENT
   // ==========================================
-  let promos = typeof dbGetPromoCodes === 'function' ? dbGetPromoCodes() : [
-    { code: 'ALLAIN10', type: 'percent', value: 10, description: '10% de réduction' },
-    { code: 'VIP20', type: 'percent', value: 20, description: '20% de réduction VIP' },
-    { code: 'LIVRAISON', type: 'fixed', value: 1500, description: '1 500 FCFA offerts' },
-    { code: 'A2M5000', type: 'fixed', value: 5000, description: '5 000 FCFA de remise' }
-  ];
+  let promos = [];
+
+  // Charger les codes promo depuis Firebase
+  async function loadPromos() {
+    if (typeof dbGetPromoCodes === 'function') {
+      try {
+        promos = await dbGetPromoCodes();
+        renderPromosTable();
+      } catch (e) {
+        console.error('Erreur chargement codes promo:', e);
+      }
+    }
+  }
 
   const promosTableBody = document.getElementById('promosTableBody');
   const openAddPromoModalBtn = document.getElementById('openAddPromoModalBtn');

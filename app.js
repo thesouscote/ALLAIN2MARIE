@@ -1292,8 +1292,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       `;
-      // Insérer avant Mon Compte
-      navMenuList.insertBefore(li, navMenuList.lastElementChild);
+      // Insérer après Boutique (premier élément) et avant Mon Compte
+      const boutiqueItem = navMenuList.querySelector('.nav-menu-item');
+      if (boutiqueItem) {
+        navMenuList.insertBefore(li, boutiqueItem.nextElementSibling);
+      } else {
+        navMenuList.appendChild(li);
+      }
     });
   }
 
