@@ -1477,12 +1477,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const navMenuList = document.getElementById('navMenuList');
     if (!navMenuList) return;
 
-    // Supprimer les anciens éléments de collection (sauf Tous les T-Shirts et Mon Compte)
-    const menuItems = navMenuList.querySelectorAll('.nav-menu-item');
-    const staticItems = 2; // Tous les T-Shirts et Mon Compte
-    for (let i = menuItems.length - 1; i >= staticItems; i--) {
-      menuItems[i].remove();
-    }
+    // Récupérer les éléments statiques (Tous les T-Shirts et Mon Compte)
+    const menuItems = Array.from(navMenuList.querySelectorAll('.nav-menu-item'));
+    const tousTsItem = menuItems.find(item => item.textContent.includes('Tous les T-Shirts') || item.textContent.includes('Boutique'));
+    const monCompteItem = menuItems.find(item => item.textContent.includes('Mon Compte'));
+
+    // Supprimer tous les éléments sauf Tous les T-Shirts et Mon Compte
+    menuItems.forEach(item => {
+      if (item !== tousTsItem && item !== monCompteItem) {
+        item.remove();
+      }
+    });
 
     // Ajouter les collections dynamiques (triées par nom)
     collections.sort((a, b) => a.name.localeCompare(b.name)).forEach(col => {
@@ -1494,8 +1499,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       `;
-      // Insérer avant Mon Compte
-      navMenuList.insertBefore(li, navMenuList.lastElementChild);
+      // Insérer après Tous les T-Shirts et avant Mon Compte
+      if (monCompteItem) {
+        navMenuList.insertBefore(li, monCompteItem);
+      } else if (tousTsItem) {
+        navMenuList.appendChild(li);
+      } else {
+        navMenuList.appendChild(li);
+      }
     });
   }
 
