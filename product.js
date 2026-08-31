@@ -376,9 +376,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Helper to get size-specific price
   function getSizePrice(product, size) {
     if (!product) return 0;
+    console.log('getSizePrice - product:', product, 'size:', size, 'sizes:', product.sizes);
     if (product.sizes && typeof product.sizes[size] === 'object' && product.sizes[size].price) {
+      console.log('getSizePrice - prix taille:', product.sizes[size].price);
       return Number(product.sizes[size].price);
     }
+    console.log('getSizePrice - prix base:', product.price);
     return Number(product.price) || 0;
   }
 
@@ -458,11 +461,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
 
-    // Charger d'abord depuis localStorage (rapide)
+    // Charger d'abord depuis localStorage (rapide, comme index.html)
     const localProducts = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
     let products = localProducts;
 
-    // Afficher immédiatement avec les données locales
     if (productId) {
       currentProduct = products.find(p => p.id === productId);
     }
@@ -473,17 +475,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (currentProduct) {
-      // Afficher immédiatement
+      // Afficher immédiatement avec les données locales (comme index.html)
       renderProductContent();
 
-      // Puis synchroniser en arrière-plan
+      // Puis synchroniser en arrière-plan avec Firebase
       if (typeof dbGetProducts === 'function') {
         try {
           const cloudProducts = await dbGetProducts();
           if (cloudProducts && cloudProducts.length > 0) {
             const cloudProduct = cloudProducts.find(p => p.id === productId);
-            if (cloudProduct && cloudProduct.price !== currentProduct.price) {
-              // Mettre à jour si le prix a changé
+            if (cloudProduct) {
+              // Mettre à jour si les données diffèrent
               currentProduct = cloudProduct;
               renderProductContent();
             }
@@ -523,16 +525,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateStockStatus();
 
     // Set Images (Front & Back)
-    const frontSrc = currentProduct.images?.front || '';
-    const backSrc = currentProduct.images?.back || '';
+    const frontSrc = currentProduct.images?.front || currentProduct.frontImage || '';
+    const backSrc = currentProduct.images?.back || currentProduct.backImage || '';
 
-    if (pageFrontImg) pageFrontImg.src = frontSrc;
+    console.log('Chargement images produit:', { frontSrc, backSrc, product: currentProduct });
+
+    if (pageFrontImg) {
+      pageFrontImg.src = frontSrc;
+      if (!frontSrc) {
+        console.warn('Image avant manquante pour produit:', currentProduct.id);
+      }
+    }
 
     if (backSrc && pageBackImg && pageBackBox) {
       pageBackImg.src = backSrc;
       pageBackBox.style.display = 'flex';
     } else if (pageBackBox) {
       pageBackBox.style.display = 'none';
+      if (!backSrc) {
+        console.warn('Image arrière manquante pour produit:', currentProduct.id);
+      }
     }
 
     // Share Button Event using Web Share API
@@ -592,12 +604,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (shareBtn) shareBtn.addEventListener('click', handleShare);
     if (mobileShareBtn) mobileShareBtn.addEventListener('click', handleShare);
-  }
-
-    // Afficher le contenu après le chargement
-    if (pdpContainer) {
-      pdpContainer.style.opacity = '1';
-    }
   }
 
   function updatePagePrice() {

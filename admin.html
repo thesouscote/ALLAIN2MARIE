@@ -248,7 +248,12 @@
 
                 <div class="form-group">
                   <label for="productPrice" class="form-label required">Prix (FCFA)</label>
-                  <input type="number" id="productPrice" class="form-input" placeholder="ex: 14000" min="0" step="500" value="14000" required>
+                  <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" id="productPrice" class="form-input" placeholder="ex: 14000" min="0" step="500" value="14000" required>
+                    <button type="button" id="syncPricesBtn" class="btn btn-outline" style="padding: 0 1rem; white-space: nowrap;">
+                      Sync
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -719,6 +724,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="db.js"></script>
-  <script src="admin.js?v=2"></script>
+  <script src="admin.js"></script>
 </body>
 </html>

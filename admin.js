@@ -757,16 +757,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Prefill size prices if empty when main price changes
   if (productPrice) {
+    console.log('productPrice trouvé, attachment event listener');
     productPrice.addEventListener('input', () => {
       const baseVal = productPrice.value;
       if (!baseVal) return;
-      document.querySelectorAll('.size-price-input').forEach(pi => {
-        if (!pi.value || pi.dataset.autoFilled === 'true') {
+      console.log('Modification prix de base:', baseVal);
+      const sizeInputs = document.querySelectorAll('.size-price-input');
+      console.log('Nombre de size-price-input trouvés:', sizeInputs.length);
+      sizeInputs.forEach(pi => {
+        // Mettre à jour si le champ n'a pas été modifié manuellement
+        if (!pi.dataset.manuallyModified) {
           pi.value = baseVal;
-          pi.dataset.autoFilled = 'true';
+          console.log('Prix taille mis à jour:', pi.dataset.size, baseVal);
+        } else {
+          console.log('Prix taille non modifié (manuel):', pi.dataset.size, pi.value);
         }
       });
     });
+
+    // Marquer comme modifié manuellement quand l'utilisateur change un prix de taille
+    document.querySelectorAll('.size-price-input').forEach(pi => {
+      pi.addEventListener('input', () => {
+        pi.dataset.manuallyModified = 'true';
+        console.log('Prix taille marqué comme manuel:', pi.dataset.size);
+      });
+    });
+  } else {
+    console.log('productPrice NON trouvé');
   }
 
   // ==========================================
@@ -904,6 +921,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (priceInput) {
           priceInput.disabled = false;
           priceInput.value = price;
+          // Marquer comme modifié manuellement seulement si le prix diffère du prix de base
+          if (Math.abs(parseFloat(price) - parseFloat(product.price)) > 1) {
+            priceInput.dataset.manuallyModified = 'true';
+          } else {
+            delete priceInput.dataset.manuallyModified;
+          }
         }
       } else {
         cb.checked = false;
@@ -945,11 +968,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const size = cb.dataset.size;
         const qtyInput = document.querySelector(`.size-qty-input[data-size="${size}"]`);
         const priceInput = document.querySelector(`.size-price-input[data-size="${size}"]`);
-        
-        const qty = parseInt(qtyInput?.value || '1', 10);
-        const price = parseFloat(priceInput?.value) || basePrice;
 
-        sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: isNaN(price) ? basePrice : price };
+        const qty = parseInt(qtyInput?.value || '1', 10);
+        const sizePrice = parseFloat(priceInput?.value) || basePrice;
+
+        // Si le prix de taille est identique au prix de base, utiliser le prix de base
+        // Cela assure la cohérence même si les données étaient différentes avant
+        if (Math.abs(sizePrice - basePrice) < 100) {
+          sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: basePrice };
+        } else {
+          sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: sizePrice };
+        }
       }
     });
 
@@ -1029,6 +1058,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   productForm.addEventListener('submit', (e) => handleSaveProduct(e));
+
+  // Bouton de synchronisation des prix
+  const syncPricesBtn = document.getElementById('syncPricesBtn');
+  if (syncPricesBtn) {
+    syncPricesBtn.addEventListener('click', () => {
+      const basePrice = productPrice.value;
+      if (!basePrice) {
+        showToast('Entrez d\'abord le prix de base', 'error');
+        return;
+      }
+      document.querySelectorAll('.size-price-input').forEach(pi => {
+        pi.value = basePrice;
+      });
+      showToast('Tous les prix synchronisés avec le prix de base');
+    });
+  }
 
   // ==========================================
   // 9. DELETE CONFIRMATION MODAL
