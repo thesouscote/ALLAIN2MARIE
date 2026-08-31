@@ -49,6 +49,12 @@
 
       <!-- Right: Account & Bag -->
       <div class="header-right">
+        <button class="nav-icon-btn" id="favBtn" aria-label="Favoris" title="Favoris">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="cart-badge" id="favBadge" style="display: none;">0</span>
+        </button>
         <a href="admin.html" class="nav-icon-btn" aria-label="Espace Admin" title="Administration">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -160,6 +166,49 @@
           <div class="pdp-info-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
             <span>Paiement Direct & Sécurisé via Wave</span>
+          </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="pdp-reviews-section" id="reviewsSection">
+          <div class="pdp-reviews-header">
+            <h3>Avis Clients</h3>
+            <div class="pdp-reviews-summary">
+              <div class="pdp-reviews-rating" id="avgRating">
+                <span class="rating-number">0.0</span>
+                <div class="rating-stars" id="avgRatingStars">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+              </div>
+              <span class="reviews-count" id="reviewsCount">(0 avis)</span>
+            </div>
+          </div>
+
+          <!-- Review Form -->
+          <div class="pdp-review-form" id="reviewForm">
+            <h4>Ajouter un avis</h4>
+            <div class="review-form-rating">
+              <span>Votre note :</span>
+              <div class="rating-input" id="ratingInput">
+                <button type="button" data-rating="1">★</button>
+                <button type="button" data-rating="2">★</button>
+                <button type="button" data-rating="3">★</button>
+                <button type="button" data-rating="4">★</button>
+                <button type="button" data-rating="5">★</button>
+              </div>
+            </div>
+            <input type="text" id="reviewName" class="review-input" placeholder="Votre nom" maxlength="50">
+            <textarea id="reviewComment" class="review-textarea" placeholder="Votre commentaire..." maxlength="500" rows="3"></textarea>
+            <button type="button" id="submitReviewBtn" class="btn btn-primary">Publier l'avis</button>
+          </div>
+
+          <!-- Reviews List -->
+          <div class="pdp-reviews-list" id="reviewsList">
+            <!-- Dynamic reviews will be inserted here -->
           </div>
         </div>
       </div>
