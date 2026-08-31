@@ -279,6 +279,20 @@ document.addEventListener('DOMContentLoaded', () => {
       cart = cart.filter(i => (i.cartKey || i.id) !== key);
     }
     saveCart();
+
+    // Analytics: Track add to cart
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'add_to_cart', {
+        currency: 'XOF',
+        value: item.price,
+        items: [{
+          item_id: item.id,
+          item_name: item.title,
+          price: item.price,
+          quantity: item.qty
+        }]
+      });
+    }
   }
 
   function removeFromCart(key) {

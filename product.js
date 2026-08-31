@@ -376,12 +376,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Helper to get size-specific price
   function getSizePrice(product, size) {
     if (!product) return 0;
-    console.log('getSizePrice - product:', product, 'size:', size, 'sizes:', product.sizes);
     if (product.sizes && typeof product.sizes[size] === 'object' && product.sizes[size].price) {
-      console.log('getSizePrice - prix taille:', product.sizes[size].price);
       return Number(product.sizes[size].price);
     }
-    console.log('getSizePrice - prix base:', product.price);
     return Number(product.price) || 0;
   }
 
@@ -508,6 +505,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.title = `ALLAIN2MARIE | ${currentProduct.title}`;
     pageTitle.textContent = currentProduct.title;
 
+    // Analytics: Track product view (only once per session)
+    if (typeof gtag !== 'undefined' && !currentProduct.viewed) {
+      gtag('event', 'view_item', {
+        currency: 'XOF',
+        value: currentProduct.price,
+        items: [{
+          item_id: currentProduct.id,
+          item_name: currentProduct.title,
+          price: currentProduct.price
+        }]
+      });
+      currentProduct.viewed = true;
+    }
+
     if (pageCollection) {
       pageCollection.textContent = currentProduct.category || 'Collection Signature';
     }
@@ -528,13 +539,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const frontSrc = currentProduct.images?.front || currentProduct.frontImage || '';
     const backSrc = currentProduct.images?.back || currentProduct.backImage || '';
 
-    console.log('Chargement images produit:', { frontSrc, backSrc, product: currentProduct });
-
     if (pageFrontImg) {
       pageFrontImg.src = frontSrc;
-      if (!frontSrc) {
-        console.warn('Image avant manquante pour produit:', currentProduct.id);
-      }
     }
 
     if (backSrc && pageBackImg && pageBackBox) {
@@ -542,9 +548,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       pageBackBox.style.display = 'flex';
     } else if (pageBackBox) {
       pageBackBox.style.display = 'none';
-      if (!backSrc) {
-        console.warn('Image arrière manquante pour produit:', currentProduct.id);
-      }
     }
 
     // Share Button Event using Web Share API
@@ -1122,6 +1125,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (storageErr) {
           console.warn('LocalStorage quota warning:', storageErr);
         }
+      }
+
+      // Analytics: Track purchase
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'purchase', {
+          transaction_id: newOrder.id,
+          value: totalAmount,
+          currency: 'XOF',
+          items: sanitizedItems.map(i => ({
+            item_id: i.id,
+            item_name: i.title,
+            price: i.price,
+            quantity: i.qty
+          }))
+        });
       }
 
       // Vider le panier
