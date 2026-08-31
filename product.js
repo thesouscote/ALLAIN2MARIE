@@ -325,7 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (applyPromoBtn) applyPromoBtn.addEventListener('click', handleApplyPromo);
+  if (applyPromoBtn) applyPromoBtn.addEventListener('click', async () => {
+    await handleApplyPromo();
+  });
   if (promoInput) {
     promoInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -893,7 +895,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { code: 'A2M5000', type: 'fixed', value: 5000 }
       ];
     }
-    ];
 
     const match = promos.find(p => p.code.toUpperCase() === code);
     if (match) {
@@ -913,7 +914,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (modalApplyPromoBtn) modalApplyPromoBtn.addEventListener('click', handleModalApplyPromo);
+  if (modalApplyPromoBtn) modalApplyPromoBtn.addEventListener('click', async () => {
+    await handleModalApplyPromo();
+  });
   if (modalPromoInput) {
     modalPromoInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
