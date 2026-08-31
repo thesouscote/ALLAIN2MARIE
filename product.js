@@ -1179,176 +1179,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     deliveryForm.addEventListener('submit', handleOrderSubmit);
   }
 
-  // ==========================================
-  // FULLSCREEN SHOPIFY MEDIA VIEWER
-  // ==========================================
-  const shopifyViewer = document.getElementById('shopifyViewer');
-  const closeShopifyViewer = document.getElementById('closeShopifyViewer');
-  const viewerMainImg = document.getElementById('viewerMainImg');
-  const viewerPrevBtn = document.getElementById('viewerPrevBtn');
-  const viewerNextBtn = document.getElementById('viewerNextBtn');
-  const thumbFrontCard = document.getElementById('thumbFrontCard');
-  const thumbBackCard = document.getElementById('thumbBackCard');
-  const thumbFrontImg = document.getElementById('thumbFrontImg');
-  const thumbBackImg = document.getElementById('thumbBackImg');
-
-  let viewerImages = [];
-  let currentViewerIndex = 0;
-
-  function openShopifyViewer(initialIndex = 0) {
-    if (!shopifyViewer || !currentProduct) return;
-
-    const front = currentProduct.images?.front || '';
-    const back = currentProduct.images?.back || '';
-    
-    viewerImages = [];
-    if (front) viewerImages.push(front);
-    if (back) viewerImages.push(back);
-
-    if (viewerImages.length === 0) return;
-
-    // Set thumbnail images
-    if (thumbFrontImg) thumbFrontImg.src = front;
-    if (thumbBackImg) thumbBackImg.src = back;
-
-    // Show or hide back thumbnail if no back photo exists
-    if (thumbBackCard) {
-      thumbBackCard.style.display = back ? 'flex' : 'none';
-    }
-    if (viewerPrevBtn && viewerNextBtn) {
-      viewerPrevBtn.style.display = viewerImages.length > 1 ? 'flex' : 'none';
-      viewerNextBtn.style.display = viewerImages.length > 1 ? 'flex' : 'none';
-    }
-
-    setViewerImage(initialIndex < viewerImages.length ? initialIndex : 0);
-
-    shopifyViewer.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  // Zoom Elements & State
-  const zoomInBtn = document.getElementById('zoomInBtn');
-  const zoomOutBtn = document.getElementById('zoomOutBtn');
-  const zoomResetBtn = document.getElementById('zoomResetBtn');
-  let currentZoom = 1;
-
-  function applyZoom(scale, originX = 50, originY = 50) {
-    if (!viewerMainImg) return;
-    
-    // Clamp zoom scale between 1x and 3.5x
-    scale = Math.max(1, Math.min(3.5, scale));
-    currentZoom = scale;
-
-    viewerMainImg.style.transformOrigin = `${originX}% ${originY}%`;
-    viewerMainImg.style.transform = `scale(${currentZoom})`;
-  }
-
-  function setViewerImage(index) {
-    currentViewerIndex = index;
-    applyZoom(1); // Reset zoom on image change
-
-    if (viewerMainImg) {
-      viewerMainImg.style.opacity = '0.3';
-      viewerMainImg.src = viewerImages[currentViewerIndex];
-      setTimeout(() => viewerMainImg.style.opacity = '1', 100);
-    }
-
-    if (thumbFrontCard && thumbBackCard) {
-      thumbFrontCard.classList.toggle('active', currentViewerIndex === 0);
-      thumbBackCard.classList.toggle('active', currentViewerIndex === 1);
-    }
-  }
-
-  function nextViewerImage() {
-    if (viewerImages.length <= 1) return;
-    const nextIdx = (currentViewerIndex + 1) % viewerImages.length;
-    setViewerImage(nextIdx);
-  }
-
-  function prevViewerImage() {
-    if (viewerImages.length <= 1) return;
-    const prevIdx = (currentViewerIndex - 1 + viewerImages.length) % viewerImages.length;
-    setViewerImage(prevIdx);
-  }
-
-  function closeShopifyViewerFunc() {
-    if (!shopifyViewer) return;
-    applyZoom(1);
-    shopifyViewer.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-
-  // Click on main photos on the page opens the interactive viewer
-  if (pageFrontImg) {
-    pageFrontImg.title = 'Cliquez pour ouvrir la visionneuse HD';
-    pageFrontImg.addEventListener('click', () => openShopifyViewer(0));
-  }
-  if (pageBackImg) {
-    pageBackImg.title = 'Cliquez pour ouvrir la visionneuse HD';
-    pageBackImg.addEventListener('click', () => openShopifyViewer(1));
-  }
-
-
-
-  // Close Viewer Button & Backdrop
-  if (closeShopifyViewer) {
-    closeShopifyViewer.addEventListener('click', closeShopifyViewerFunc);
-  }
-  if (shopifyViewer) {
-    shopifyViewer.addEventListener('click', (e) => {
-      if (e.target === shopifyViewer || e.target === shopifyViewerMain) {
-        closeShopifyViewerFunc();
-      }
-    });
-  }
-
-  // Thumbnail clicks
-  if (thumbFrontCard) thumbFrontCard.addEventListener('click', () => setViewerImage(0));
-  if (thumbBackCard) thumbBackCard.addEventListener('click', () => setViewerImage(1));
-
-  // Navigation Arrows
-  if (viewerPrevBtn) viewerPrevBtn.addEventListener('click', prevViewerImage);
-  if (viewerNextBtn) viewerNextBtn.addEventListener('click', nextViewerImage);
-
   // Escape key closes modals
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      closeShopifyViewerFunc();
       closeDeliveryModal();
       if (cartDrawer && cartDrawer.classList.contains('active')) closeCartDrawer();
     }
   });
 
-  // Click on big image switches between the 2 views when not zoomed
-  if (viewerMainImg) {
-    viewerMainImg.addEventListener('click', () => {
-      if (currentZoom === 1) {
-        nextViewerImage();
-      } else {
-        applyZoom(1);
+  // Simple zoom on click for product images
+  if (pageFrontImg) {
+    pageFrontImg.addEventListener('click', () => {
+      if (pageFrontImg.src) {
+        window.open(pageFrontImg.src, '_blank');
       }
     });
-
-    // Mouse movement when zoomed pans the view naturally
-    viewerMainImg.addEventListener('mousemove', (e) => {
-      if (currentZoom <= 1) return;
-      const rect = viewerMainImg.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-      viewerMainImg.style.transformOrigin = `${x}% ${y}%`;
-    });
   }
-
-  // Mouse Wheel Zoom Exclusively
-  if (shopifyViewerMain) {
-    shopifyViewerMain.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.35 : -0.35;
-      const rect = viewerMainImg.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-      applyZoom(currentZoom + delta, x, y);
-    }, { passive: false });
+  if (pageBackImg) {
+    pageBackImg.addEventListener('click', () => {
+      if (pageBackImg.src) {
+        window.open(pageBackImg.src, '_blank');
+      }
+    });
   }
 
   // ==========================================

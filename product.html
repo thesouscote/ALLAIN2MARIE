@@ -74,10 +74,10 @@
       <!-- Left / Center: 2 T-Shirt Views Side by Side -->
       <div class="pdp-page-gallery" id="pdpGallery">
         <div class="pdp-image-box">
-          <img src="" alt="Vue Avant" class="pdp-page-img" id="pageFrontImg" referrerpolicy="no-referrer">
+          <img src="" alt="Vue Avant" class="pdp-page-img" id="pageFrontImg" referrerpolicy="no-referrer" style="cursor: zoom-in;">
         </div>
         <div class="pdp-image-box" id="pageBackBox">
-          <img src="" alt="Vue Arrière" class="pdp-page-img" id="pageBackImg" referrerpolicy="no-referrer">
+          <img src="" alt="Vue Arrière" class="pdp-page-img" id="pageBackImg" referrerpolicy="no-referrer" style="cursor: zoom-in;">
         </div>
       </div>
 
@@ -233,36 +233,7 @@
     </div>
   </aside>
 
-  <div class="shopify-viewer-overlay" id="shopifyViewer">
-    <button class="shopify-viewer-close" id="closeShopifyViewer" aria-label="Fermer la visionneuse" title="Fermer">&times;</button>
-    
-    <!-- Navigation Arrows -->
-    <button class="shopify-viewer-nav prev" id="viewerPrevBtn" aria-label="Vue précédente">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="15 18 9 12 15 6"></polyline>
-      </svg>
-    </button>
-    <button class="shopify-viewer-nav next" id="viewerNextBtn" aria-label="Vue suivante">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    </button>
 
-    <!-- Main Viewport (Center) -->
-    <div class="shopify-viewer-main" id="shopifyViewerMain">
-      <img src="" alt="Vue T-Shirt HD" class="shopify-viewer-img" id="viewerMainImg" referrerpolicy="no-referrer">
-    </div>
-
-    <!-- Right Sidebar Thumbnails (Exactement comme la capture) -->
-    <div class="shopify-viewer-thumbs" id="viewerThumbs">
-      <div class="shopify-thumb-card active" id="thumbFrontCard" data-idx="0">
-        <img src="" alt="Devant" id="thumbFrontImg" referrerpolicy="no-referrer">
-      </div>
-      <div class="shopify-thumb-card" id="thumbBackCard" data-idx="1">
-        <img src="" alt="Dos" id="thumbBackImg" referrerpolicy="no-referrer">
-      </div>
-    </div>
-  </div>
 
   <!-- Delivery & Customer Information Modal -->
   <div class="delivery-modal-overlay" id="deliveryModal">
@@ -338,8 +309,8 @@
           </div>
 
           <div class="form-group-delivery">
-            <label for="custAddress">Adresse de livraison & Repère précis *</label>
-            <textarea id="custAddress" class="delivery-input" rows="2" placeholder="Ex: Angré 8ème tranche, carrefour prière, près de la pharmacie..." required></textarea>
+            <label for="custAddress">votre position Yango Repère précis *</label>
+            <textarea id="custAddress" class="delivery-input" rows="2" placeholder="Ex: Position Yango, quartier, repère précis..." required></textarea>
           </div>
 
           <button type="submit" class="btn-pay-wave-final" id="btnConfirmWavePayment">

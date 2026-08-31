@@ -1344,6 +1344,25 @@ document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   loadCollectionsInMenu();
 
+  // Simple zoom on click for modal images
+  const pdpFrontImg = document.getElementById('pdpFrontImg');
+  const pdpBackImg = document.getElementById('pdpBackImg');
+
+  if (pdpFrontImg) {
+    pdpFrontImg.addEventListener('click', () => {
+      if (pdpFrontImg.src) {
+        window.open(pdpFrontImg.src, '_blank');
+      }
+    });
+  }
+  if (pdpBackImg) {
+    pdpBackImg.addEventListener('click', () => {
+      if (pdpBackImg.src) {
+        window.open(pdpBackImg.src, '_blank');
+      }
+    });
+  }
+
   // ==========================================
   // AUTHENTICATION STATE MANAGEMENT
   // ==========================================
