@@ -1003,7 +1003,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof dbSaveProduct === 'function') {
       try {
+        console.log('Sauvegarde produit sur Firebase:', productData.id, productData.price);
         const saved = await dbSaveProduct(productData);
+        console.log('Produit sauvegardé sur Firebase:', saved);
         if (saved) {
           const idx = products.findIndex(p => p.id === saved.id);
           if (idx !== -1) products[idx] = saved;

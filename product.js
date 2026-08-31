@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const pageTitle = document.getElementById('pageTitle');
   const pagePrice = document.getElementById('pagePrice');
   const pageFrontImg = document.getElementById('pageFrontImg');
@@ -39,10 +39,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load Products from LocalStorage
-  function getProducts() {
+  async function getProducts() {
+    // Charger depuis localStorage d'abord (rapide)
     const raw = localStorage.getItem('ALLAIN2MARIE_PRODUCTS');
-    if (!raw) return [];
-    try { return JSON.parse(raw); } catch (e) { return []; }
+    const localProducts = raw ? JSON.parse(raw) : [];
+
+    // Synchroniser avec Firebase en arrière-plan
+    if (typeof dbGetProducts === 'function') {
+      try {
+        const cloudProducts = await dbGetProducts();
+        if (cloudProducts && cloudProducts.length > 0) {
+          localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(cloudProducts));
+          return cloudProducts;
+        }
+      } catch (e) {
+        console.error('Erreur synchronisation produits Firebase:', e);
+      }
+    }
+    return localProducts;
   }
 
   // Load / Save Cart
@@ -122,12 +136,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2800);
   }
 
-  function updateQty(key, delta) {
+  async function updateQty(key, delta) {
     const item = cart.find(i => (i.cartKey || i.id) === key);
     if (!item) return;
-    
+
     if (delta > 0) {
-      const allProds = getProducts();
+      const allProds = await getProducts();
       const prod = allProds.find(p => p.id === item.id) || currentProduct;
       const maxStock = prod ? getSizeStock(prod, item.size || 'M') : 99;
       if (item.qty >= maxStock) {
@@ -229,8 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      itemEl.querySelector('.minus-btn').addEventListener('click', () => updateQty(key, -1));
-      itemEl.querySelector('.plus-btn').addEventListener('click', () => updateQty(key, 1));
+      itemEl.querySelector('.minus-btn').addEventListener('click', async () => updateQty(key, -1));
+      itemEl.querySelector('.plus-btn').addEventListener('click', async () => updateQty(key, 1));
       itemEl.querySelector('.cart-trash-btn').addEventListener('click', () => removeFromCart(key));
 
       cartItemsList.appendChild(itemEl);
@@ -440,10 +454,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load Current Product by ID from URL
-  function initProductPage() {
+  async function initProductPage() {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
-    const products = getProducts();
+    const products = await getProducts();
 
     if (productId) {
       currentProduct = products.find(p => p.id === productId);
@@ -1513,12 +1527,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Charger les collections
   loadCollectionsInMenu();
 
-  const localProds = getProducts();
+  const localProds = await getProducts();
   const params = new URLSearchParams(window.location.search);
   const urlProductId = params.get('id');
 
   // Charger depuis localStorage uniquement
-  initProductPage();
+  await initProductPage();
 
   // ==========================================
   // NEWSLETTER SUBSCRIPTION FORM
