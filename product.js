@@ -457,8 +457,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function initProductPage() {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
-    const products = await getProducts();
 
+    // Charger d'abord depuis localStorage (rapide)
+    const localProducts = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+    let products = localProducts;
+
+    // Afficher immédiatement avec les données locales
     if (productId) {
       currentProduct = products.find(p => p.id === productId);
     }
@@ -468,11 +472,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentProduct = products[0];
     }
 
-    if (!currentProduct) {
+    if (currentProduct) {
+      // Afficher immédiatement
+      renderProductContent();
+
+      // Puis synchroniser en arrière-plan
+      if (typeof dbGetProducts === 'function') {
+        try {
+          const cloudProducts = await dbGetProducts();
+          if (cloudProducts && cloudProducts.length > 0) {
+            const cloudProduct = cloudProducts.find(p => p.id === productId);
+            if (cloudProduct && cloudProduct.price !== currentProduct.price) {
+              // Mettre à jour si le prix a changé
+              currentProduct = cloudProduct;
+              renderProductContent();
+            }
+          }
+        } catch (e) {
+          console.error('Erreur synchronisation produit:', e);
+        }
+      }
+    } else {
+      // Pas de produit disponible
       pageTitle.textContent = 'Modèle Indisponible';
       pagePrice.textContent = '';
-      return;
     }
+  }
+
+  function renderProductContent() {
+    if (!currentProduct) return;
 
     // Set Title, Collection, SKU & Initial Price
     document.title = `ALLAIN2MARIE | ${currentProduct.title}`;
@@ -510,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Share Button Event using Web Share API
     const shareBtn = document.getElementById('shareBtn');
     const mobileShareBtn = document.getElementById('mobileShareBtn');
-    
+
     const handleShare = async () => {
       const shareData = {
         title: currentProduct.title || 'ALLAIN2MARIE T-Shirt',
@@ -519,7 +547,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       try {
-        // Essayer l'API Web Share d'abord
         if (navigator.share) {
           await navigator.share(shareData);
           showLuxuryToast('Merci pour le partage !', 'success');
@@ -527,7 +554,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (err) {
         if (err.name === 'AbortError') {
-          // L'utilisateur a annulé le partage - pas une vraie erreur
           return;
         }
         console.log('Web Share non disponible ou annulé, fallback vers clipboard');
@@ -535,7 +561,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Fallback: copier dans le presse-papier
       try {
-        // Essayer l'API Clipboard moderne
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(shareData.url);
           showLuxuryToast('Lien copié dans le presse-papier !', 'success');
@@ -550,27 +575,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const textArea = document.createElement('textarea');
         textArea.value = shareData.url;
         textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        textArea.style.top = '0';
+        textArea.style.opacity = '0';
         document.body.appendChild(textArea);
         textArea.select();
-        
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        if (successful) {
+        try {
+          document.execCommand('copy');
           showLuxuryToast('Lien copié dans le presse-papier !', 'success');
-        } else {
-          throw new Error('execCommand copy failed');
+        } catch (e) {
+          showLuxuryToast('Impossible de partager. Copiez manuellement: ' + shareData.url, 'error');
         }
-      } catch (legacyErr) {
-        console.error('Tous les méthodes de partage ont échoué:', legacyErr);
+        document.body.removeChild(textArea);
+      } catch (e) {
         showLuxuryToast('Impossible de partager. Copiez manuellement: ' + shareData.url, 'error');
       }
     };
-    
+
     if (shareBtn) shareBtn.addEventListener('click', handleShare);
     if (mobileShareBtn) mobileShareBtn.addEventListener('click', handleShare);
+  }
+
+    // Afficher le contenu après le chargement
+    if (pdpContainer) {
+      pdpContainer.style.opacity = '1';
+    }
   }
 
   function updatePagePrice() {
