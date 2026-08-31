@@ -743,10 +743,10 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 82%;
-  height: 82%;
-  max-width: 82%;
-  max-height: 82%;
+  width: 95%;
+  height: 95%;
+  max-width: 95%;
+  max-height: 95%;
   object-fit: contain;
   object-position: center;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.07)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.03));
@@ -829,51 +829,7 @@ body {
   display: none;
 }
 
-.store-card-fav-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #000;
-  padding: 8px;
-  cursor: pointer;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 11;
-  border: none;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-}
 
-.store-card-fav-btn:hover {
-  background: #ef4444;
-  color: white;
-  transform: scale(1.1);
-}
-
-.store-card-fav-btn.active {
-  background: #ef4444;
-  color: white;
-}
-
-.store-card-fav-btn.active svg {
-  fill: currentColor;
-}
-
-.store-card:hover .store-card-fav-btn {
-  opacity: 1;
-  visibility: visible;
-}
-
-.store-card-fav-btn svg {
-  width: 18px;
-  height: 18px;
-}
 }
 
 .store-card:hover .store-card-quick-add.show {

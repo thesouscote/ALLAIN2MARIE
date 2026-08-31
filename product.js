@@ -28,48 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   let cart = loadCart();
   let selectedRating = 0;
 
-  // Load / Save favorites in localStorage
-  function loadFavorites() {
-    try {
-      const raw = localStorage.getItem('ALLAIN2MARIE_FAVORITES');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveFavorites(favorites) {
-    localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify(favorites));
-    updateFavoritesUI();
-  }
-
-  function toggleFavorite(productId) {
-    const favorites = loadFavorites();
-    const index = favorites.indexOf(productId);
-    if (index > -1) {
-      favorites.splice(index, 1);
-    } else {
-      favorites.push(productId);
-    }
-    saveFavorites(favorites);
-    return index === -1;
-  }
-
-  function isFavorite(productId) {
-    const favorites = loadFavorites();
-    return favorites.includes(productId);
-  }
-
-  function updateFavoritesUI() {
-    const favorites = loadFavorites();
-    const favCount = favorites.length;
-    const favBadge = document.getElementById('favBadge');
-    if (favBadge) {
-      favBadge.textContent = favCount;
-      favBadge.style.display = favCount > 0 ? 'flex' : 'none';
-    }
-  }
-
   // Format amount to FCFA / CFA
   function formatFCFA(amount) {
     if (amount === null || amount === undefined || isNaN(amount)) return '0 FCFA';
@@ -132,99 +90,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       cartOverlay.classList.remove('active');
       document.body.style.overflow = '';
     }
-  }
-
-  // ==========================================
-  // REVIEWS SYSTEM
-  // ==========================================
-  function loadReviews(productId) {
-    try {
-      const allReviews = JSON.parse(localStorage.getItem('ALLAIN2MARIE_REVIEWS') || '{}');
-      return allReviews[productId] || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveReviews(productId, reviews) {
-    try {
-      const allReviews = JSON.parse(localStorage.getItem('ALLAIN2MARIE_REVIEWS') || '{}');
-      allReviews[productId] = reviews;
-      localStorage.setItem('ALLAIN2MARIE_REVIEWS', JSON.stringify(allReviews));
-    } catch (e) {
-      console.error('Error saving reviews:', e);
-    }
-  }
-
-  function addReview(productId, review) {
-    const reviews = loadReviews(productId);
-    review.id = Date.now();
-    review.createdAt = new Date().toISOString();
-    reviews.unshift(review);
-    saveReviews(productId, reviews);
-    updateReviewsUI(productId);
-  }
-
-  function calculateAverageRating(reviews) {
-    if (reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    return (sum / reviews.length).toFixed(1);
-  }
-
-  function updateReviewsUI(productId) {
-    const reviews = loadReviews(productId);
-    const avgRating = calculateAverageRating(reviews);
-    const reviewsCount = reviews.length;
-
-    // Update rating display
-    const avgRatingEl = document.getElementById('avgRating');
-    const reviewsCountEl = document.getElementById('reviewsCount');
-    const avgRatingStarsEl = document.getElementById('avgRatingStars');
-
-    if (avgRatingEl) {
-      avgRatingEl.querySelector('.rating-number').textContent = avgRating;
-    }
-    if (reviewsCountEl) {
-      reviewsCountEl.textContent = `(${reviewsCount} avis)`;
-    }
-    if (avgRatingStarsEl) {
-      avgRatingStarsEl.innerHTML = generateStars(avgRating);
-    }
-
-    // Render reviews list
-    const reviewsListEl = document.getElementById('reviewsList');
-    if (reviewsListEl) {
-      if (reviews.length === 0) {
-        reviewsListEl.innerHTML = '<p style="text-align: center; color: #64748b; padding: 2rem;">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>';
-      } else {
-        reviewsListEl.innerHTML = reviews.map(review => `
-          <div class="review-item">
-            <div class="review-header">
-              <span class="review-author">${review.name}</span>
-              <div class="review-stars">${generateStars(review.rating)}</div>
-            </div>
-            <p class="review-comment">${review.comment}</p>
-            <span class="review-date">${new Date(review.createdAt).toLocaleDateString('fr-FR')}</span>
-          </div>
-        `).join('');
-      }
-    }
-  }
-
-  function generateStars(rating) {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    let stars = '';
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars += '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
-      } else if (i === fullStars && hasHalfStar) {
-        stars += '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
-      } else {
-        stars += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
-      }
-    }
-    return stars;
   }
 
   // Luxury Floating Toast Notification
@@ -655,8 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentProduct.viewed = true;
     }
 
-    // Update reviews UI
-    updateReviewsUI(currentProduct.id);
+
 
     if (pageCollection) {
       pageCollection.textContent = currentProduct.category || 'Collection Signature';
@@ -1653,89 +1517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ==========================================
   // REVIEWS EVENT LISTENERS
   // ==========================================
-  const ratingInput = document.getElementById('ratingInput');
-  const reviewName = document.getElementById('reviewName');
-  const reviewComment = document.getElementById('reviewComment');
-  const submitReviewBtn = document.getElementById('submitReviewBtn');
 
-  if (ratingInput) {
-    ratingInput.addEventListener('click', (e) => {
-      if (e.target.dataset.rating) {
-        selectedRating = parseInt(e.target.dataset.rating);
-        updateRatingInputUI();
-      }
-    });
-  }
-
-  function updateRatingInputUI() {
-    if (!ratingInput) return;
-    const buttons = ratingInput.querySelectorAll('button');
-    buttons.forEach((btn, index) => {
-      if (index < selectedRating) {
-        btn.style.color = '#fbbf24';
-      } else {
-        btn.style.color = '#d1d5db';
-      }
-    });
-  }
-
-  if (submitReviewBtn) {
-    submitReviewBtn.addEventListener('click', () => {
-      if (!currentProduct) {
-        showLuxuryToast('Produit non chargé', 'error');
-        return;
-      }
-
-      if (selectedRating === 0) {
-        showLuxuryToast('Veuillez sélectionner une note', 'error');
-        return;
-      }
-
-      const name = reviewName?.value.trim() || 'Anonyme';
-      const comment = reviewComment?.value.trim();
-
-      if (!comment) {
-        showLuxuryToast('Veuillez écrire un commentaire', 'error');
-        return;
-      }
-
-      const review = {
-        productId: currentProduct.id,
-        name: name,
-        rating: selectedRating,
-        comment: comment
-      };
-
-      addReview(currentProduct.id, review);
-      showLuxuryToast('Avis publié avec succès !', 'success');
-
-      // Reset form
-      selectedRating = 0;
-      updateRatingInputUI();
-      if (reviewName) reviewName.value = '';
-      if (reviewComment) reviewComment.value = '';
-    });
-  }
-
-  // Favorites button on product page
-  const favBtn = document.getElementById('favBtn');
-  if (favBtn) {
-    favBtn.addEventListener('click', () => {
-      if (!currentProduct) {
-        showLuxuryToast('Produit non chargé', 'error');
-        return;
-      }
-      const added = toggleFavorite(currentProduct.id);
-      if (added) {
-        showLuxuryToast('Ajouté aux favoris', 'success');
-      } else {
-        showLuxuryToast('Retiré des favoris', 'info');
-      }
-    });
-  }
-
-  // Initialize favorites UI
-  updateFavoritesUI();
 
   // Charger les collections dynamiquement dans le menu burger
   function loadCollectionsInMenu() {

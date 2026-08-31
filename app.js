@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const cartDrawerCount = document.getElementById('cartDrawerCount');
   const cartTotal = document.getElementById('cartTotal');
   const checkoutBtn = document.getElementById('checkoutBtn');
-  const favBtn = document.getElementById('favBtn');
 
   // Product Detail Modal Elements
   const productModal = document.getElementById('productModal');
@@ -508,80 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try { return JSON.parse(raw); } catch (e) { return []; }
   }
 
-  // Load / Save favorites in localStorage
-  function loadFavorites() {
-    try {
-      const raw = localStorage.getItem('ALLAIN2MARIE_FAVORITES');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveFavorites(favorites) {
-    localStorage.setItem('ALLAIN2MARIE_FAVORITES', JSON.stringify(favorites));
-    updateFavoritesUI();
-  }
-
-  function toggleFavorite(productId) {
-    const favorites = loadFavorites();
-    const index = favorites.indexOf(productId);
-    if (index > -1) {
-      favorites.splice(index, 1);
-    } else {
-      favorites.push(productId);
-    }
-    saveFavorites(favorites);
-    return index === -1; // true if added, false if removed
-  }
-
-  function isFavorite(productId) {
-    const favorites = loadFavorites();
-    return favorites.includes(productId);
-  }
-
-  function updateFavoritesUI() {
-    const favorites = loadFavorites();
-    const favCount = favorites.length;
-    const favBadge = document.getElementById('favBadge');
-    if (favBadge) {
-      favBadge.textContent = favCount;
-      favBadge.style.display = favCount > 0 ? 'flex' : 'none';
-    }
-
-    // Update heart icons on product cards
-    document.querySelectorAll('.fav-btn').forEach(btn => {
-      const productId = btn.dataset.productId;
-      if (isFavorite(productId)) {
-        btn.classList.add('active');
-        btn.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        `;
-      } else {
-        btn.classList.remove('active');
-        btn.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        `;
-      }
-    });
-  }
-
-  // Favorites button click handler
-  if (favBtn) {
-    favBtn.addEventListener('click', () => {
-      const favorites = loadFavorites();
-      if (favorites.length === 0) {
-        showLuxuryToast('Aucun favori pour le moment', 'info');
-      } else {
-        showLuxuryToast(`${favorites.length} favori(s) enregistré(s)`, 'success');
-      }
-    });
-  }
-
 
 
   // ==========================================
@@ -651,27 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     imgWrap.appendChild(quickAddBtn);
 
-    // Favorite Button
-    const favBtn = document.createElement('button');
-    favBtn.className = 'store-card-fav-btn fav-btn';
-    favBtn.dataset.productId = p.id;
-    favBtn.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-      </svg>
-    `;
-    imgWrap.appendChild(favBtn);
 
-    // Favorite button click handler
-    favBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const added = toggleFavorite(p.id);
-      if (added) {
-        showLuxuryToast('Ajouté aux favoris', 'success');
-      } else {
-        showLuxuryToast('Retiré des favoris', 'info');
-      }
-    });
 
     // Hover timeout for quick add button
     let hoverTimeout;
@@ -1438,7 +1343,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadProducts();
   loadCollectionsInMenu();
-  updateFavoritesUI();
 
   // ==========================================
   // AUTHENTICATION STATE MANAGEMENT
