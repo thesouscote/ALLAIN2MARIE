@@ -671,6 +671,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!storefrontGrid) return;
     const products = getProducts();
 
+    console.log('renderStorefront - produits totaux:', products.length);
+    console.log('renderStorefront - catégorie demandée:', category);
+
     storefrontGrid.innerHTML = '';
 
     // Normaliser le nom de la catégorie cible
@@ -688,6 +691,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return match;
         });
 
+    console.log('renderStorefront - produits filtrés:', filteredProducts.length);
+
     if (filteredProducts.length === 0) {
       storefrontGrid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: #64748b;">
@@ -702,6 +707,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = createProductCard(p, index);
       storefrontGrid.appendChild(card);
     });
+
+    console.log('renderStorefront - cartes créées:', filteredProducts.length);
   }
 
   // Cart Drawer open/close events
@@ -1247,9 +1254,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('loadProducts - currentCategory:', currentCategory);
     console.log('loadProducts - produits locaux:', localProducts.length);
+    console.log('loadProducts - produits locaux détails:', localProducts);
 
-    // NE PAS réinitialiser à 'all' même si la catégorie est vide
-    // renderStorefront() affichera "Aucun modèle disponible" si vide
+    // Toujours afficher les produits locaux même si Firebase échoue
+    renderStorefront(currentCategory);
 
     // Synchroniser avec Firebase en arrière-plan
     if (typeof dbGetProducts === 'function') {
@@ -1345,9 +1353,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCollectionsInMenu();
 
   // Simple zoom on click for modal images
-  const pdpFrontImg = document.getElementById('pdpFrontImg');
-  const pdpBackImg = document.getElementById('pdpBackImg');
-
   if (pdpFrontImg) {
     pdpFrontImg.addEventListener('click', () => {
       if (pdpFrontImg.src) {
