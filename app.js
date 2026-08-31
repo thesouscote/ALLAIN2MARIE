@@ -1275,12 +1275,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const navMenuList = document.getElementById('navMenuList');
     if (!navMenuList) return;
 
-    // Supprimer les anciens éléments de collection (sauf Boutique et Mon Compte)
-    const menuItems = navMenuList.querySelectorAll('.nav-menu-item');
-    const staticItems = 2; // Boutique et Mon Compte
-    for (let i = menuItems.length - 1; i >= staticItems; i--) {
-      menuItems[i].remove();
-    }
+    // Récupérer les éléments statiques (Boutique et Mon Compte)
+    const menuItems = Array.from(navMenuList.querySelectorAll('.nav-menu-item'));
+    const boutiqueItem = menuItems.find(item => item.textContent.includes('Boutique'));
+    const monCompteItem = menuItems.find(item => item.textContent.includes('Mon Compte'));
+
+    // Supprimer tous les éléments sauf Boutique et Mon Compte
+    menuItems.forEach(item => {
+      if (item !== boutiqueItem && item !== monCompteItem) {
+        item.remove();
+      }
+    });
 
     // Ajouter les collections dynamiques (triées par nom)
     collections.sort((a, b) => a.name.localeCompare(b.name)).forEach(col => {
@@ -1292,10 +1297,11 @@ document.addEventListener('DOMContentLoaded', () => {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       `;
-      // Insérer après Boutique (premier élément) et avant Mon Compte
-      const boutiqueItem = navMenuList.querySelector('.nav-menu-item');
-      if (boutiqueItem) {
-        navMenuList.insertBefore(li, boutiqueItem.nextElementSibling);
+      // Insérer après Boutique et avant Mon Compte
+      if (monCompteItem) {
+        navMenuList.insertBefore(li, monCompteItem);
+      } else if (boutiqueItem) {
+        navMenuList.appendChild(li);
       } else {
         navMenuList.appendChild(li);
       }
