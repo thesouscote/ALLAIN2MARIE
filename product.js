@@ -1187,22 +1187,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Simple zoom on click for product images
-  if (pageFrontImg) {
-    pageFrontImg.addEventListener('click', () => {
-      if (pageFrontImg.src) {
-        window.open(pageFrontImg.src, '_blank');
-      }
-    });
-  }
-  if (pageBackImg) {
-    pageBackImg.addEventListener('click', () => {
-      if (pageBackImg.src) {
-        window.open(pageBackImg.src, '_blank');
-      }
-    });
-  }
-
   // ==========================================
   // WAVE PAYMENT OVERLAY (30 secondes)
   // ==========================================

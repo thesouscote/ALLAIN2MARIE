@@ -1254,49 +1254,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log('loadProducts - currentCategory:', currentCategory);
     console.log('loadProducts - produits locaux:', localProducts.length);
-    console.log('loadProducts - produits locaux détails:', localProducts);
-
-    // Si aucun produit, ajouter des données de test pour diagnostiquer
-    if (localProducts.length === 0) {
-      console.log('Aucun produit trouvé, ajout de données de test');
-      const testProducts = [
-        {
-          id: 'test-1',
-          title: 'T-Shirt Test 1',
-          price: 15000,
-          category: 'Collection Test',
-          images: {
-            front: 'https://via.placeholder.com/400x500?text=T-Shirt+1',
-            back: 'https://via.placeholder.com/400x500?text=T-Shirt+1+Back'
-          },
-          sizes: {
-            S: { qty: 10, price: 15000 },
-            M: { qty: 10, price: 15000 },
-            L: { qty: 10, price: 15000 }
-          },
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'test-2',
-          title: 'T-Shirt Test 2',
-          price: 18000,
-          category: 'Collection Test',
-          images: {
-            front: 'https://via.placeholder.com/400x500?text=T-Shirt+2',
-            back: 'https://via.placeholder.com/400x500?text=T-Shirt+2+Back'
-          },
-          sizes: {
-            S: { qty: 5, price: 18000 },
-            M: { qty: 5, price: 18000 },
-            L: { qty: 5, price: 18000 }
-          },
-          createdAt: new Date().toISOString()
-        }
-      ];
-      products = testProducts;
-      localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(testProducts));
-      console.log('Données de test ajoutées');
-    }
 
     // Toujours afficher les produits locaux même si Firebase échoue
     renderStorefront(currentCategory);
@@ -1393,22 +1350,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadProducts();
   loadCollectionsInMenu();
-
-  // Simple zoom on click for modal images
-  if (pdpFrontImg) {
-    pdpFrontImg.addEventListener('click', () => {
-      if (pdpFrontImg.src) {
-        window.open(pdpFrontImg.src, '_blank');
-      }
-    });
-  }
-  if (pdpBackImg) {
-    pdpBackImg.addEventListener('click', () => {
-      if (pdpBackImg.src) {
-        window.open(pdpBackImg.src, '_blank');
-      }
-    });
-  }
 
   // ==========================================
   // AUTHENTICATION STATE MANAGEMENT
