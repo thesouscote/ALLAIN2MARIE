@@ -146,7 +146,7 @@ async function decryptObject(encryptedString) {
 }
 
 /**
- * Sauvegarde chiffrée dans localStorage
+ * Sauvegarde chiffrée dans localStorage (pour données sensibles uniquement)
  */
 async function saveEncrypted(key, data) {
   try {
@@ -160,7 +160,7 @@ async function saveEncrypted(key, data) {
 }
 
 /**
- * Chargement déchiffré depuis localStorage
+ * Chargement déchiffré depuis localStorage (pour données sensibles uniquement)
  */
 async function loadEncrypted(key, defaultValue = null) {
   try {
@@ -178,6 +178,68 @@ async function loadEncrypted(key, defaultValue = null) {
     } catch {
       return defaultValue;
     }
+  }
+}
+
+/**
+ * Sauvegarde normale (non chiffrée) pour les données standard
+ */
+function saveNormal(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Erreur de sauvegarde normale pour ${key}:`, error);
+  }
+}
+
+/**
+ * Chargement normal (non chiffré) pour les données standard
+ */
+function loadNormal(key, defaultValue = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : defaultValue;
+  } catch (error) {
+    console.error(`Erreur de chargement normal pour ${key}:`, error);
+    return defaultValue;
+  }
+}
+
+/**
+ * Sauvegarde intelligente : chiffre seulement les données sensibles
+ */
+async function saveSmart(key, data) {
+  // Clés de données sensibles qui doivent être chiffrées
+  const sensitiveKeys = [
+    'ALLAIN2MARIE_ADMIN_CONFIG',
+    'ALLAIN2MARIE_USER_DATA',
+    'ALLAIN2MARIE_PAYMENT_INFO',
+    'ALLAIN2MARIE_SENSITIVE'
+  ];
+  
+  if (sensitiveKeys.some(sensitiveKey => key.includes(sensitiveKey))) {
+    await saveEncrypted(key, data);
+  } else {
+    saveNormal(key, data);
+  }
+}
+
+/**
+ * Chargement intelligent : déchiffre seulement les données sensibles
+ */
+async function loadSmart(key, defaultValue = null) {
+  // Clés de données sensibles qui doivent être chiffrées
+  const sensitiveKeys = [
+    'ALLAIN2MARIE_ADMIN_CONFIG',
+    'ALLAIN2MARIE_USER_DATA',
+    'ALLAIN2MARIE_PAYMENT_INFO',
+    'ALLAIN2MARIE_SENSITIVE'
+  ];
+  
+  if (sensitiveKeys.some(sensitiveKey => key.includes(sensitiveKey))) {
+    return await loadEncrypted(key, defaultValue);
+  } else {
+    return loadNormal(key, defaultValue);
   }
 }
 
@@ -200,8 +262,7 @@ function getProductImage(product, slot) {
 
 async function writeLocalProducts(list) {
   try {
-    const encrypted = await encryptObject(list);
-    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', encrypted);
+    await saveSmart('ALLAIN2MARIE_PRODUCTS', list);
   } catch (err) {
     console.warn('Quota localStorage, cache léger:', err);
     const light = list.map(p => ({
@@ -211,8 +272,7 @@ async function writeLocalProducts(list) {
         back: toCloudImageUrl(p.images?.back)
       }
     }));
-    const encryptedLight = await encryptObject(light);
-    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', encryptedLight);
+    await saveSmart('ALLAIN2MARIE_PRODUCTS', light);
   }
 }
 
@@ -250,7 +310,7 @@ function initFirebaseDB() {
 
 // 2. Gestion des Produits (Catalogue & Stocks)
 async function dbGetProducts() {
-  const local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
+  const local = await loadSmart('ALLAIN2MARIE_PRODUCTS', []);
   if (!isFirebaseInitialized || !db) return local;
 
   try {
@@ -280,7 +340,7 @@ async function dbSaveProduct(product) {
     throw new Error('Produit invalide');
   }
 
-  let local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
+  let local = await loadSmart('ALLAIN2MARIE_PRODUCTS', []);
   const idx = local.findIndex(p => p.id === product.id);
   if (idx !== -1) {
     local[idx] = product;
@@ -299,7 +359,7 @@ async function dbSaveProduct(product) {
   }
   await db.collection('products').doc(cloudProduct.id).set(cloudProduct);
 
-  local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
+  local = await loadSmart('ALLAIN2MARIE_PRODUCTS', []);
   const cloudIdx = local.findIndex(p => p.id === cloudProduct.id);
   if (cloudIdx !== -1) local[cloudIdx] = cloudProduct;
   else local.unshift(cloudProduct);
@@ -311,9 +371,9 @@ async function dbSaveProduct(product) {
 
 async function dbDeleteProduct(productId) {
   // 1. Suppression locale
-  let local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
+  let local = await loadSmart('ALLAIN2MARIE_PRODUCTS', []);
   local = local.filter(p => p.id !== productId);
-  await saveEncrypted('ALLAIN2MARIE_PRODUCTS', local);
+  await saveSmart('ALLAIN2MARIE_PRODUCTS', local);
 
   // 2. Suppression Cloud Firebase
   if (isFirebaseInitialized && db) {
@@ -329,7 +389,7 @@ async function dbDeleteProduct(productId) {
 // 3. Gestion des Commandes & Coordonnées de Livraison
 async function sanitizeLocalOrders() {
   try {
-    const raw = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+    const raw = await loadSmart('ALLAIN2MARIE_ORDERS', []);
     const uniqueMap = new Map();
     raw.forEach(o => {
       if (o && o.id && !uniqueMap.has(o.id)) {
@@ -337,7 +397,7 @@ async function sanitizeLocalOrders() {
       }
     });
     const uniqueOrders = Array.from(uniqueMap.values());
-    await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders.slice(0, 50));
+    await saveSmart('ALLAIN2MARIE_ORDERS', uniqueOrders.slice(0, 50));
     return uniqueOrders;
   } catch (e) {
     return [];
@@ -364,7 +424,7 @@ async function dbGetOrders() {
       const mergedOrders = Array.from(orderMap.values())
         .sort((a, b) => ((a.createdAt || '') < (b.createdAt || '') ? 1 : -1))
         .slice(0, 50);
-      await saveEncrypted('ALLAIN2MARIE_ORDERS', mergedOrders);
+      await saveSmart('ALLAIN2MARIE_ORDERS', mergedOrders);
       return mergedOrders;
     }
   } catch (err) {
@@ -383,7 +443,7 @@ async function dbSaveOrder(order) {
     local.unshift(order);
   }
   local = local.slice(0, 50);
-  await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
+  await saveSmart('ALLAIN2MARIE_ORDERS', local);
 
   // 2. Sauvegarde Cloud Firebase
   if (isFirebaseInitialized && db) {
@@ -397,11 +457,11 @@ async function dbSaveOrder(order) {
 }
 
 async function dbUpdateOrderStatus(orderId, newStatus) {
-  let local = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+  let local = await loadSmart('ALLAIN2MARIE_ORDERS', []);
   const found = local.find(o => o.id === orderId);
   if (found) {
     found.deliveryStatus = newStatus;
-    await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
+    await saveSmart('ALLAIN2MARIE_ORDERS', local);
   }
 
   if (isFirebaseInitialized && db) {
@@ -415,9 +475,9 @@ async function dbUpdateOrderStatus(orderId, newStatus) {
 }
 
 async function dbDeleteOrder(orderId) {
-  let local = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+  let local = await loadSmart('ALLAIN2MARIE_ORDERS', []);
   local = local.filter(o => o.id !== orderId);
-  await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
+  await saveSmart('ALLAIN2MARIE_ORDERS', local);
 
   if (isFirebaseInitialized && db) {
     try {
@@ -457,7 +517,7 @@ async function dbGetCollections() {
     const doc = await db.collection('settings').doc('collections').get();
     if (doc.exists && doc.data().list && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
       const cloudList = doc.data().list;
-      await saveEncrypted('ALLAIN2MARIE_COLLECTIONS', cloudList);
+      await saveSmart('ALLAIN2MARIE_COLLECTIONS', cloudList);
       return cloudList;
     } else {
       // Seed Firebase with default collections if not yet present
@@ -473,7 +533,7 @@ async function dbGetCollections() {
 }
 
 async function dbSaveCollections(collections) {
-  await saveEncrypted('ALLAIN2MARIE_COLLECTIONS', collections);
+  await saveSmart('ALLAIN2MARIE_COLLECTIONS', collections);
 
   if (isFirebaseInitialized && db) {
     try {

@@ -176,15 +176,15 @@
                 addResult('❌ Test 5: Erreur de déchiffrement d\'objet: ' + e.message, 'error');
             }
 
-            // Test 6: Test de sauvegarde/chargement chiffré
+            // Test 6: Test de sauvegarde/chargement chiffré (données sensibles)
             try {
-                const testKey = 'TEST_ENCRYPTION_KEY';
+                const testKey = 'ALLAIN2MARIE_ADMIN_CONFIG_TEST';
                 await saveEncrypted(testKey, testData.orders);
-                addResult('✅ Test 6: Sauvegarde chiffrée réussie', 'success');
+                addResult('✅ Test 6: Sauvegarde chiffrée réussie (données sensibles)', 'success');
                 
                 const loaded = await loadEncrypted(testKey);
                 if (JSON.stringify(loaded) === JSON.stringify(testData.orders)) {
-                    addResult('✅ Test 6: Chargement déchiffré réussi', 'success');
+                    addResult('✅ Test 6: Chargement déchiffré réussi (données sensibles)', 'success');
                 } else {
                     addResult('❌ Test 6: Chargement déchiffré échoué', 'error');
                 }
@@ -195,18 +195,37 @@
                 addResult('❌ Test 6: Erreur de sauvegarde/chargement: ' + e.message, 'error');
             }
 
-            // Test 7: Vérifier que les données chiffrées sont différentes des originales
+            // Test 7: Test de sauvegarde/chargement normal (données non sensibles)
+            try {
+                const testKey = 'ALLAIN2MARIE_PRODUCTS_TEST';
+                await saveSmart(testKey, testData.products);
+                addResult('✅ Test 7: Sauvegarde normale réussie (données non sensibles)', 'success');
+                
+                const loaded = await loadSmart(testKey);
+                if (JSON.stringify(loaded) === JSON.stringify(testData.products)) {
+                    addResult('✅ Test 7: Chargement normal réussi (données non sensibles)', 'success');
+                } else {
+                    addResult('❌ Test 7: Chargement normal échoué', 'error');
+                }
+                
+                // Nettoyage
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                addResult('❌ Test 7: Erreur de sauvegarde/chargement normal: ' + e.message, 'error');
+            }
+
+            // Test 8: Vérifier que les données chiffrées sont différentes des originales
             try {
                 const original = JSON.stringify(testData);
                 const encrypted = await encryptObject(testData);
                 
                 if (encrypted !== original) {
-                    addResult('✅ Test 7: Les données chiffrées sont différentes des originales', 'success');
+                    addResult('✅ Test 8: Les données chiffrées sont différentes des originales', 'success');
                 } else {
-                    addResult('❌ Test 7: Les données chiffrées sont IDENTIQUES aux originales (échec du chiffrement)', 'error');
+                    addResult('❌ Test 8: Les données chiffrées sont IDENTIQUES aux originales (échec du chiffrement)', 'error');
                 }
             } catch (e) {
-                addResult('❌ Test 7: Erreur lors de la comparaison: ' + e.message, 'error');
+                addResult('❌ Test 8: Erreur lors de la comparaison: ' + e.message, 'error');
             }
 
             addResult('🎉 Tests terminés !', 'info');

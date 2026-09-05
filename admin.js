@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   async function loadProducts() {
     try {
-      if (typeof loadEncrypted === 'function') {
-        return await loadEncrypted(STORAGE_KEY, []);
+      if (typeof loadSmart === 'function') {
+        return await loadSmart(STORAGE_KEY, []);
       }
       // Fallback si la fonction n'est pas disponible
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
       products = newProducts;
     }
     try {
-      if (typeof saveEncrypted === 'function') {
-        await saveEncrypted(STORAGE_KEY, products);
+      if (typeof saveSmart === 'function') {
+        await saveSmart(STORAGE_KEY, products);
       } else {
         // Fallback si la fonction n'est pas disponible
         localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
             back: p.images?.back ? p.images.back.slice(0, 300000) : ''
           }
         }));
-        if (typeof saveEncrypted === 'function') {
-          await saveEncrypted(STORAGE_KEY, light);
+        if (typeof saveSmart === 'function') {
+          await saveSmart(STORAGE_KEY, light);
         } else {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
         }
@@ -192,8 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Total orders count
     let orders = [];
     try {
-      if (typeof loadEncrypted === 'function') {
-        orders = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      if (typeof loadSmart === 'function') {
+        orders = await loadSmart('ALLAIN2MARIE_ORDERS', []);
       } else {
         orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
       }
@@ -345,8 +345,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   async function loadProducts() {
     try {
-      if (typeof loadEncrypted === 'function') {
-        return await loadEncrypted(STORAGE_KEY, []);
+      if (typeof loadSmart === 'function') {
+        return await loadSmart(STORAGE_KEY, []);
       }
       // Fallback si la fonction n'est pas disponible
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -376,8 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
       products = newProducts;
     }
     try {
-      if (typeof saveEncrypted === 'function') {
-        await saveEncrypted(STORAGE_KEY, products);
+      if (typeof saveSmart === 'function') {
+        await saveSmart(STORAGE_KEY, products);
       } else {
         // Fallback si la fonction n'est pas disponible
         localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
@@ -392,8 +392,8 @@ document.addEventListener('DOMContentLoaded', () => {
             back: p.images?.back ? p.images.back.slice(0, 300000) : ''
           }
         }));
-        if (typeof saveEncrypted === 'function') {
-          await saveEncrypted(STORAGE_KEY, light);
+        if (typeof saveSmart === 'function') {
+          await saveSmart(STORAGE_KEY, light);
         } else {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
         }
@@ -583,8 +583,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Total orders count
     let orders = [];
     try {
-      if (typeof loadEncrypted === 'function') {
-        orders = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      if (typeof loadSmart === 'function') {
+        orders = await loadSmart('ALLAIN2MARIE_ORDERS', []);
       } else {
         orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
       }
@@ -1235,8 +1235,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadOrders() {
     try {
       let raw;
-      if (typeof loadEncrypted === 'function') {
-        raw = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      if (typeof loadSmart === 'function') {
+        raw = await loadSmart('ALLAIN2MARIE_ORDERS', []);
       } else {
         raw = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
       }
@@ -1248,8 +1248,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const uniqueOrders = Array.from(uniqueMap.values());
       if (uniqueOrders.length !== raw.length) {
-        if (typeof saveEncrypted === 'function') {
-          await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders);
+        if (typeof saveSmart === 'function') {
+          await saveSmart('ALLAIN2MARIE_ORDERS', uniqueOrders);
         } else {
           localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders));
         }
@@ -1268,8 +1268,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
     const uniqueOrders = Array.from(uniqueMap.values());
-    if (typeof saveEncrypted === 'function') {
-      await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders);
+    if (typeof saveSmart === 'function') {
+      await saveSmart('ALLAIN2MARIE_ORDERS', uniqueOrders);
     } else {
       localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders));
     }
