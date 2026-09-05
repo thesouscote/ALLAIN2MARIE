@@ -918,7 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await switchTab('add-product-tab');
   }
 
-  function openEditForm(id) {
+  async function openEditForm(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
 
