@@ -498,20 +498,22 @@ document.addEventListener('DOMContentLoaded', () => {
       tabNavAddProduct.className = savedTab === 'add-product-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
     }
 
-    // Charger les données de l'onglet restauré
-    if (savedTab === 'catalog-tab') {
-      await renderCatalog();
-      await updateMetrics();
-    } else if (savedTab === 'orders-tab') {
-      await renderOrders();
-    } else if (savedTab === 'collections-tab') {
-      // Attendre que les éléments soient initialisés
-      if (collectionsTableBody) {
-        renderCollectionsTable();
+    // Charger les données de l'onglet restauré (async)
+    (async function restoreTabData() {
+      if (savedTab === 'catalog-tab') {
+        await renderCatalog();
+        await updateMetrics();
+      } else if (savedTab === 'orders-tab') {
+        await renderOrders();
+      } else if (savedTab === 'collections-tab') {
+        // Attendre que les éléments soient initialisés
+        if (collectionsTableBody) {
+          renderCollectionsTable();
+        }
+      } else if (savedTab === 'promos-tab') {
+        loadPromos();
       }
-    } else if (savedTab === 'promos-tab') {
-      loadPromos();
-    }
+    })();
   }
 
   if (topAddProductBtn) topAddProductBtn.addEventListener('click', async () => await resetAndOpenForm());
