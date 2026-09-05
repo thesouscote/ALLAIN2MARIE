@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('LocalStorage save error:', e2);
       }
     }
-    renderCatalog();
+    await renderCatalog();
     await updateMetrics();
   }
 
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Initialiser l'interface principale
-    renderCatalog();
+    await renderCatalog();
     await updateMetrics();
   }
 
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('LocalStorage save error:', e2);
       }
     }
-    renderCatalog();
+    await renderCatalog();
     await updateMetrics();
   }
 
@@ -469,10 +469,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (tabNavCatalog) tabNavCatalog.addEventListener('click', () => switchTab('catalog-tab'));
-  if (tabNavOrders) tabNavOrders.addEventListener('click', () => switchTab('orders-tab'));
-  if (tabNavCollections) tabNavCollections.addEventListener('click', () => switchTab('collections-tab'));
-  if (tabNavPromos) tabNavPromos.addEventListener('click', () => switchTab('promos-tab'));
+  if (tabNavCatalog) tabNavCatalog.addEventListener('click', async () => await switchTab('catalog-tab'));
+  if (tabNavOrders) tabNavOrders.addEventListener('click', async () => await switchTab('orders-tab'));
+  if (tabNavCollections) tabNavCollections.addEventListener('click', async () => await switchTab('collections-tab'));
+  if (tabNavPromos) tabNavPromos.addEventListener('click', async () => await switchTab('promos-tab'));
 
   // Restaurer la tab active après chargement (immédiatement pour éviter le flash)
   const savedTab = sessionStorage.getItem('ALLAIN2MARIE_ADMIN_ACTIVE_TAB');
@@ -514,10 +514,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (topAddProductBtn) topAddProductBtn.addEventListener('click', () => resetAndOpenForm());
-  if (catalogAddBtn) catalogAddBtn.addEventListener('click', () => resetAndOpenForm());
-  if (emptyAddProductBtn) emptyAddProductBtn.addEventListener('click', () => resetAndOpenForm());
-  if (cancelFormBtn) cancelFormBtn.addEventListener('click', () => switchTab('catalog-tab'));
+  if (topAddProductBtn) topAddProductBtn.addEventListener('click', async () => await resetAndOpenForm());
+  if (catalogAddBtn) catalogAddBtn.addEventListener('click', async () => await resetAndOpenForm());
+  if (emptyAddProductBtn) emptyAddProductBtn.addEventListener('click', async () => await resetAndOpenForm());
+  if (cancelFormBtn) cancelFormBtn.addEventListener('click', async () => await switchTab('catalog-tab'));
 
   // Bouton Sync Firebase — force la synchronisation de tous les produits locaux
   const syncFirebaseBtn = document.getElementById('syncFirebaseBtn');
@@ -701,8 +701,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Filter events
-  catalogSearchInput.addEventListener('input', renderCatalog);
-  categoryFilter.addEventListener('change', renderCatalog);
+  catalogSearchInput.addEventListener('input', async () => await renderCatalog());
+  categoryFilter.addEventListener('change', async () => await renderCatalog());
 
   // ==========================================
   // 6. LIENS LUNACY (aucun fichier stocké)
@@ -893,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 8. FORM HANDLING (ADD & EDIT)
   // ==========================================
-  function resetAndOpenForm() {
+  async function resetAndOpenForm() {
     formTitle.textContent = 'Nouveau T-Shirt ALLAIN2MARIE';
     editProductId.value = '';
     productForm.reset();
@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    switchTab('add-product-tab');
+    await switchTab('add-product-tab');
   }
 
   function openEditForm(id) {
@@ -1010,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    switchTab('add-product-tab');
+    await switchTab('add-product-tab');
   }
 
   async function handleSaveProduct(e) {
@@ -1825,7 +1825,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       populateCategoryDropdowns();
       renderCollectionsTable();
-      renderCatalog();
+      await renderCatalog();
       showToast(`Collection "${col.name}" supprimée.`);
     }
   }
@@ -1841,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Bouton openAddCollectionModalBtn non trouvé');
     }
 
-    if (manageCollectionsQuickBtn) manageCollectionsQuickBtn.addEventListener('click', () => switchTab('collections-tab'));
+    if (manageCollectionsQuickBtn) manageCollectionsQuickBtn.addEventListener('click', async () => await switchTab('collections-tab'));
     if (addNewCollectionQuickBtn) addNewCollectionQuickBtn.addEventListener('click', () => openCollectionModal());
     if (closeCollectionModalBtn) closeCollectionModalBtn.addEventListener('click', closeCollectionModal);
     if (cancelCollectionModalBtn) cancelCollectionModalBtn.addEventListener('click', closeCollectionModal);
@@ -1913,7 +1913,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       populateCategoryDropdowns();
       renderCollectionsTable();
-      renderCatalog();
+      await renderCatalog();
       closeCollectionModal();
     });
     }
@@ -2123,7 +2123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         collections = cloudCols;
         populateCategoryDropdowns();
         renderCollectionsTable();
-        renderCatalog();
+        await renderCatalog();
       }
     }).catch(() => {});
   }
@@ -2132,8 +2132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     dbGetProducts().then(async (cloudProds) => {
       if (cloudProds && cloudProds.length > 0) {
         products = cloudProds;
-        renderCatalog();
-        updateMetrics();
+        await renderCatalog();
+        await updateMetrics();
       }
 
       const withLunacyLinks = products.filter(p => isHttpImageLink(productImageSrc(p, 'front')));
@@ -2148,7 +2148,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         await saveProducts(products);
-        renderCatalog();
+        await renderCatalog();
       }
     }).catch(() => {});
   }
