@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let ordersTableBody = null;
   let emptyOrdersState = null;
   let ordersCountBadge = null;
-  let refreshOrdersBtn = null;
 
   function initOrdersElements() {
     ordersTableBody = document.getElementById('ordersTableBody');
@@ -158,7 +157,35 @@ document.addEventListener('DOMContentLoaded', () => {
     metricTotalSales = document.getElementById('metricTotalSales');
     metricPendingDeliveries = document.getElementById('metricPendingDeliveries');
     ordersCountBadge = document.getElementById('ordersCountBadge');
-    refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
+    
+    // Attacher l'événement au bouton refresh
+    const refreshOrdersBtn = document.getElementById('refreshOrdersBtn');
+    if (refreshOrdersBtn) {
+      refreshOrdersBtn.addEventListener('click', async () => {
+        console.log('Bouton Actualiser cliqué');
+        // Recharger immédiatement depuis localStorage (rapide)
+        orders = await loadOrders();
+        await renderOrders();
+        showToast('Commandes actualisées !');
+
+        // Synchroniser avec Firebase en arrière-plan (sans bloquer)
+        if (typeof dbGetOrders === 'function') {
+          setTimeout(async () => {
+            try {
+              await dbGetOrders();
+              orders = await loadOrders();
+              await renderOrders();
+              showToast('Synchronisation Firebase terminée');
+            } catch (e) {
+              console.error('Erreur de synchronisation Firebase:', e);
+            }
+          }, 100);
+        }
+      });
+      console.log('✅ Bouton refreshOrdersBtn attaché avec succès');
+    } else {
+      console.warn('⚠️ Bouton refreshOrdersBtn non trouvé');
+    }
   }
 
   // State
@@ -799,38 +826,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (priceInput) {
         priceInput.disabled = !cb.checked;
-        if (cb.checked && !priceInput.value && productPrice.value) {
-          priceInput.value = productPrice.value;
+        // Si c'est la taille M, utiliser le prix de base par défaut
+        if (cb.checked && !priceInput.value) {
+          if (size === 'M' && productPrice.value) {
+            priceInput.value = productPrice.value;
+          } else if (size !== 'M') {
+            // Pour les autres tailles, utiliser le prix de M comme référence
+            const sizeMPrice = document.querySelector('.size-price-input[data-size="M"]');
+            if (sizeMPrice && sizeMPrice.value) {
+              priceInput.value = sizeMPrice.value;
+            }
+          }
         }
       }
     });
   });
 
   // Prefill size prices if empty when main price changes
+  // Le prix de base est lié spécifiquement à la taille M par défaut
   if (productPrice) {
     console.log('productPrice trouvé, attachment event listener');
     productPrice.addEventListener('input', () => {
       const baseVal = productPrice.value;
       if (!baseVal) return;
       console.log('Modification prix de base:', baseVal);
-      const sizeInputs = document.querySelectorAll('.size-price-input');
-      console.log('Nombre de size-price-input trouvés:', sizeInputs.length);
-      sizeInputs.forEach(pi => {
-        // Mettre à jour si le champ n'a pas été modifié manuellement
-        if (!pi.dataset.manuallyModified) {
-          pi.value = baseVal;
-          console.log('Prix taille mis à jour:', pi.dataset.size, baseVal);
-        } else {
-          console.log('Prix taille non modifié (manuel):', pi.dataset.size, pi.value);
-        }
-      });
+      
+      // Mettre à jour seulement la taille M (prix par défaut)
+      const sizeMPriceInput = document.querySelector('.size-price-input[data-size="M"]');
+      if (sizeMPriceInput) {
+        sizeMPriceInput.value = baseVal;
+        console.log('Prix taille M mis à jour avec le prix de base:', baseVal);
+      }
     });
 
-    // Marquer comme modifié manuellement quand l'utilisateur change un prix de taille
+    // Marquer comme modifié manuellement quand l'utilisateur change un prix de taille (sauf M)
     document.querySelectorAll('.size-price-input').forEach(pi => {
       pi.addEventListener('input', () => {
-        pi.dataset.manuallyModified = 'true';
-        console.log('Prix taille marqué comme manuel:', pi.dataset.size);
+        if (pi.dataset.size !== 'M') {
+          pi.dataset.manuallyModified = 'true';
+          console.log('Prix taille marqué comme manuel:', pi.dataset.size);
+        }
       });
     });
   } else {
@@ -1023,12 +1058,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const qty = parseInt(qtyInput?.value || '1', 10);
         const sizePrice = parseFloat(priceInput?.value) || basePrice;
 
-        // Si le prix de taille est identique au prix de base, utiliser le prix de base
-        // Cela assure la cohérence même si les données étaient différentes avant
-        if (Math.abs(sizePrice - basePrice) < 100) {
+        // Pour la taille M, toujours utiliser le prix de base
+        if (size === 'M') {
           sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: basePrice };
         } else {
-          sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: sizePrice };
+          // Pour les autres tailles, utiliser leur propre prix si différent de M
+          const sizeMPrice = document.querySelector('.size-price-input[data-size="M"]')?.value || basePrice;
+          if (Math.abs(sizePrice - parseFloat(sizeMPrice)) < 100) {
+            sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: parseFloat(sizeMPrice) };
+          } else {
+            sizes[size] = { qty: isNaN(qty) ? 1 : qty, price: sizePrice };
+          }
         }
       }
     });
@@ -1421,32 +1461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (refreshOrdersBtn) {
-    refreshOrdersBtn.addEventListener('click', async () => {
-      console.log('Bouton Actualiser cliqué');
-      // Recharger immédiatement depuis localStorage (rapide)
-      orders = await loadOrders();
-      await renderOrders();
-      showToast('Commandes actualisées !');
-
-      // Synchroniser avec Firebase en arrière-plan (sans bloquer)
-      if (typeof dbGetOrders === 'function') {
-        setTimeout(async () => {
-          try {
-            await dbGetOrders();
-            orders = await loadOrders();
-            await renderOrders();
-            showToast('Synchronisation Firebase terminée');
-          } catch (e) {
-            console.error('Erreur de synchronisation Firebase:', e);
-          }
-        }, 100);
-      }
-    });
-  } else {
-    console.error('Bouton refreshOrdersBtn non trouvé');
-  }
-
   // ==========================================
   // ORDER DETAIL MODAL
   // ==========================================
@@ -1787,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (collectionModal) collectionModal.classList.remove('active');
   }
 
-  function handleDeleteCollection(col) {
+  async function handleDeleteCollection(col) {
     const count = products.filter(p => (p.category || '').toLowerCase() === (col.name || '').toLowerCase()).length;
     let confirmMsg = `Voulez-vous vraiment supprimer la collection "${col.name}" ?`;
     if (count > 0) {
@@ -1840,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', () => {
       colCodeInput = document.getElementById('colCodeInput');
       colDescInput = document.getElementById('colDescInput');
 
-      collectionForm.addEventListener('submit', (e) => {
+      collectionForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = editCollectionId ? editCollectionId.value.trim() : '';
       const name = colNameInput.value.trim();
@@ -2100,7 +2114,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Synchronisation Cloud Firebase en arrière-plan
   if (typeof dbGetCollections === 'function') {
-    dbGetCollections().then(cloudCols => {
+    dbGetCollections().then(async (cloudCols) => {
       if (cloudCols && cloudCols.length > 0) {
         collections = cloudCols;
         populateCategoryDropdowns();

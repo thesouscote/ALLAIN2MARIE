@@ -535,6 +535,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Render Sizes & update price based on selected size
     renderSizeSelector();
+    // Assurer que le prix est mis à jour avec la taille M par défaut
     updatePagePrice();
     updateStockStatus();
 
@@ -644,7 +645,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       availableSizes = ['S', 'M', 'L', 'XL'];
     }
 
-    selectedSize = availableSizes[0];
+    // Sélectionner la taille M par défaut si disponible
+    if (availableSizes.includes('M')) {
+      selectedSize = 'M';
+    } else {
+      selectedSize = availableSizes[0];
+    }
+    
     if (pdpSelectedSizeText) pdpSelectedSizeText.textContent = selectedSize;
 
     availableSizes.forEach(size => {
