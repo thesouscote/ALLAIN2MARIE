@@ -579,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 5. CATALOG TABLE RENDERING
   // ==========================================
-  function renderCatalog() {
+  async function renderCatalog() {
     const searchTerm = catalogSearchInput.value.toLowerCase().trim();
     const selectedCategory = categoryFilter.value;
 
