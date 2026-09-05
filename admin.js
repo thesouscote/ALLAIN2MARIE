@@ -674,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Attach row events
     document.querySelectorAll('.edit-product-btn').forEach(btn => {
-      btn.addEventListener('click', () => openEditForm(btn.dataset.id));
+      btn.addEventListener('click', async () => await openEditForm(btn.dataset.id));
     });
 
     document.querySelectorAll('.delete-product-btn').forEach(btn => {
@@ -1159,7 +1159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (confirmOkBtn) {
-    confirmOkBtn.addEventListener('click', () => {
+    confirmOkBtn.addEventListener('click', async () => {
     if (pendingDeleteType === 'product' && pendingDeleteId) {
       if (typeof dbDeleteProduct === 'function') {
         dbDeleteProduct(pendingDeleteId);
@@ -1422,7 +1422,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (refreshOrdersBtn) {
-    refreshOrdersBtn.addEventListener('click', () => {
+    refreshOrdersBtn.addEventListener('click', async () => {
       console.log('Bouton Actualiser cliqué');
       // Recharger immédiatement depuis localStorage (rapide)
       orders = await loadOrders();
