@@ -183,26 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  async function updateMetrics() {
-    console.log(' Mise à jour des métriques...');
-    // Implementation simplifiée
-    if (metricActiveCount) metricActiveCount.textContent = products.length;
-    if (metricTotalStock) metricTotalStock.textContent = '0';
-    
-    // Total orders count
-    let orders = [];
-    try {
-      if (typeof loadSmart === 'function') {
-        orders = await loadSmart('ALLAIN2MARIE_ORDERS', []);
-      } else {
-        orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
-      }
-    } catch (e) {
-      orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
-    }
-    if (metricCatalogOrders) metricCatalogOrders.textContent = orders.length;
-  }
-
   // ==========================================
   // SECURITY CHECK
   // ==========================================
@@ -565,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 4. METRICS CALCULATION
   // ==========================================
-  function updateMetrics() {
+  async function updateMetrics() {
     const activeProducts = products.filter(p => p.status === 'published');
     if (metricActiveCount) metricActiveCount.textContent = activeProducts.length;
 
