@@ -14,13 +14,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1. DATA INITIALIZATION & LOCALSTORAGE
   // ==========================================
-  function loadProducts() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+  async function loadProducts() {
     try {
-      return JSON.parse(raw);
+      if (typeof loadEncrypted === 'function') {
+        return await loadEncrypted(STORAGE_KEY, []);
+      }
+      // Fallback si la fonction n'est pas disponible
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error('Error parsing products localStorage', e);
+        return [];
+      }
     } catch (e) {
-      console.error('Error parsing products localStorage', e);
+      console.error('Error loading products', e);
       return [];
     }
   }
@@ -33,12 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return '';
   }
 
-  function saveProducts(newProducts = null) {
+  async function saveProducts(newProducts = null) {
     if (Array.isArray(newProducts)) {
       products = newProducts;
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      if (typeof saveEncrypted === 'function') {
+        await saveEncrypted(STORAGE_KEY, products);
+      } else {
+        // Fallback si la fonction n'est pas disponible
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      }
     } catch (err) {
       console.warn('LocalStorage quota warning, saving light payload:', err);
       try {
@@ -49,13 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
             back: p.images?.back ? p.images.back.slice(0, 300000) : ''
           }
         }));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+        if (typeof saveEncrypted === 'function') {
+          await saveEncrypted(STORAGE_KEY, light);
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+        }
       } catch (e2) {
         console.error('LocalStorage save error:', e2);
       }
     }
     renderCatalog();
-    updateMetrics();
+    await updateMetrics();
   }
 
   // ==========================================
@@ -144,15 +162,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // State
-  let products = loadProducts();
+  let products = [];
   let collections = typeof dbGetLocalCollections === 'function' ? dbGetLocalCollections() : [];
   let currentImages = {
     front: '',
     back: ''
   };
 
+  // Initialisation asynchrone des produits
+  (async function initProducts() {
+    products = await loadProducts();
+  })();
+
   // Placeholder functions (to be implemented properly)
-  function renderCatalog() {
+  async function renderCatalog() {
     console.log(' Rendu du catalogue...');
     // Implementation simplifiée pour éviter les erreurs
     if (productsTableBody) {
@@ -160,12 +183,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function updateMetrics() {
+  async function updateMetrics() {
     console.log(' Mise à jour des métriques...');
     // Implementation simplifiée
     if (metricActiveCount) metricActiveCount.textContent = products.length;
     if (metricTotalStock) metricTotalStock.textContent = '0';
-    if (metricCatalogOrders) metricCatalogOrders.textContent = '0';
+    
+    // Total orders count
+    let orders = [];
+    try {
+      if (typeof loadEncrypted === 'function') {
+        orders = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      } else {
+        orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+      }
+    } catch (e) {
+      orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+    }
+    if (metricCatalogOrders) metricCatalogOrders.textContent = orders.length;
   }
 
   // ==========================================
@@ -228,8 +263,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Fonction d'initialisation de l'interface admin (appelée après authentification réussie)
-  function initAdminInterface() {
+  async function initAdminInterface() {
     console.log(' Initialisation de l\'interface admin...');
+
+    // Charger les produits (désormais asynchrone)
+    products = await loadProducts();
 
     // Initialiser les éléments des commandes
     initOrdersElements();
@@ -259,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialiser l'interface principale
     renderCatalog();
-    updateMetrics();
+    await updateMetrics();
   }
 
   // Logout Handler (défini globalement pour être toujours disponible)
@@ -305,13 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // 1. DATA INITIALIZATION & LOCALSTORAGE
   // ==========================================
-  function loadProducts() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
+  async function loadProducts() {
     try {
-      return JSON.parse(raw);
+      if (typeof loadEncrypted === 'function') {
+        return await loadEncrypted(STORAGE_KEY, []);
+      }
+      // Fallback si la fonction n'est pas disponible
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error('Error parsing products localStorage', e);
+        return [];
+      }
     } catch (e) {
-      console.error('Error parsing products localStorage', e);
+      console.error('Error loading products', e);
       return [];
     }
   }
@@ -324,12 +371,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return '';
   }
 
-  function saveProducts(newProducts = null) {
+  async function saveProducts(newProducts = null) {
     if (Array.isArray(newProducts)) {
       products = newProducts;
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      if (typeof saveEncrypted === 'function') {
+        await saveEncrypted(STORAGE_KEY, products);
+      } else {
+        // Fallback si la fonction n'est pas disponible
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      }
     } catch (err) {
       console.warn('LocalStorage quota warning, saving light payload:', err);
       try {
@@ -340,13 +392,17 @@ document.addEventListener('DOMContentLoaded', () => {
             back: p.images?.back ? p.images.back.slice(0, 300000) : ''
           }
         }));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+        if (typeof saveEncrypted === 'function') {
+          await saveEncrypted(STORAGE_KEY, light);
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(light));
+        }
       } catch (e2) {
         console.error('LocalStorage save error:', e2);
       }
     }
     renderCatalog();
-    updateMetrics();
+    await updateMetrics();
   }
 
   // ==========================================
@@ -380,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabNavPromos = document.getElementById('tabNavPromos');
   const tabNavAddProduct = document.getElementById('tabNavAddProduct');
 
-  function switchTab(tabId) {
+  async function switchTab(tabId) {
     // Sauvegarder la tab active
     sessionStorage.setItem('ALLAIN2MARIE_ADMIN_ACTIVE_TAB', tabId);
 
@@ -402,10 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (tabId === 'catalog-tab') {
-      renderCatalog();
-      updateMetrics();
+      await renderCatalog();
+      await updateMetrics();
     } else if (tabId === 'orders-tab') {
-      renderOrders();
+      await renderOrders();
     } else if (tabId === 'collections-tab') {
       renderCollectionsTable();
     } else if (tabId === 'promos-tab') {
@@ -444,10 +500,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Charger les données de l'onglet restauré
     if (savedTab === 'catalog-tab') {
-      renderCatalog();
-      updateMetrics();
+      await renderCatalog();
+      await updateMetrics();
     } else if (savedTab === 'orders-tab') {
-      renderOrders();
+      await renderOrders();
     } else if (savedTab === 'collections-tab') {
       // Attendre que les éléments soient initialisés
       if (collectionsTableBody) {
@@ -467,6 +523,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const syncFirebaseBtn = document.getElementById('syncFirebaseBtn');
   if (syncFirebaseBtn) {
     syncFirebaseBtn.addEventListener('click', async () => {
+      // Charger les produits si pas encore chargés
+      if (products.length === 0) {
+        products = await loadProducts();
+      }
       if (typeof dbSaveProduct !== 'function') {
         showToast(' Firebase non connecté', 'error');
         return;
@@ -489,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
           skipped++;
         }
       }
-      saveProducts(products);
+      await saveProducts(products);
       syncFirebaseBtn.disabled = false;
       syncFirebaseBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><span class="btn-label-desktop">Sync Firebase</span>';
       if (skipped > 0) {
@@ -521,7 +581,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (metricTotalStock) metricTotalStock.textContent = totalStock;
     
     // Total orders count
-    const orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+    let orders = [];
+    try {
+      if (typeof loadEncrypted === 'function') {
+        orders = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      } else {
+        orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+      }
+    } catch (e) {
+      orders = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+    }
     if (metricCatalogOrders) metricCatalogOrders.textContent = orders.length;
   }
 
@@ -1028,7 +1097,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('T-Shirt publié sur le site avec succès !');
     }
 
-    saveProducts(products);
+    await saveProducts(products);
 
     if (typeof dbSaveProduct === 'function') {
       try {
@@ -1038,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saved) {
           const idx = products.findIndex(p => p.id === saved.id);
           if (idx !== -1) products[idx] = saved;
-          saveProducts(products);
+          await saveProducts(products);
         }
         showToast('T-Shirt visible sur tous les appareils');
       } catch (err) {
@@ -1048,13 +1117,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Rafraîchir l'affichage du catalogue, métriques et collections
-    renderCatalog();
-    updateMetrics();
+    await renderCatalog();
+    await updateMetrics();
     if (typeof renderCollectionsTable === 'function') {
       renderCollectionsTable();
     }
 
-    switchTab('catalog-tab');
+    await switchTab('catalog-tab');
   }
 
   productForm.addEventListener('submit', (e) => handleSaveProduct(e));
@@ -1114,17 +1183,17 @@ document.addEventListener('DOMContentLoaded', () => {
         dbDeleteProduct(pendingDeleteId);
       }
       products = products.filter(p => p.id !== pendingDeleteId);
-      saveProducts();
+      await saveProducts();
       showToast('T-Shirt supprimé du catalogue.');
       confirmModal.classList.remove('active');
       pendingDeleteId = null;
       pendingDeleteType = null;
-      renderCatalog();
-      updateMetrics();
+      await renderCatalog();
+      await updateMetrics();
     } else if (pendingDeleteType === 'order' && pendingDeleteOrder) {
-      let allOrders = loadOrders();
+      let allOrders = await loadOrders();
       allOrders = allOrders.filter(o => o.id !== pendingDeleteOrder.id);
-      saveOrders(allOrders);
+      await saveOrders(allOrders);
       if (typeof dbDeleteOrder === 'function') {
         dbDeleteOrder(pendingDeleteOrder.id);
       }
@@ -1132,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmModal.classList.remove('active');
       pendingDeleteOrder = null;
       pendingDeleteType = null;
-      renderOrders();
+      await renderOrders();
     }
   });
   }
@@ -1163,9 +1232,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 10. ORDERS & DELIVERIES MANAGEMENT
   // ==========================================
 
-  function loadOrders() {
+  async function loadOrders() {
     try {
-      const raw = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+      let raw;
+      if (typeof loadEncrypted === 'function') {
+        raw = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
+      } else {
+        raw = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+      }
       const uniqueMap = new Map();
       raw.forEach(o => {
         if (o && o.id && !uniqueMap.has(o.id)) {
@@ -1174,7 +1248,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const uniqueOrders = Array.from(uniqueMap.values());
       if (uniqueOrders.length !== raw.length) {
-        localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders));
+        if (typeof saveEncrypted === 'function') {
+          await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders);
+        } else {
+          localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders));
+        }
       }
       return uniqueOrders;
     } catch (e) {
@@ -1182,18 +1260,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function saveOrders(orders) {
+  async function saveOrders(orders) {
     const uniqueMap = new Map();
     (orders || []).forEach(o => {
       if (o && o.id && !uniqueMap.has(o.id)) {
         uniqueMap.set(o.id, o);
       }
     });
-    localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(Array.from(uniqueMap.values())));
+    const uniqueOrders = Array.from(uniqueMap.values());
+    if (typeof saveEncrypted === 'function') {
+      await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders);
+    } else {
+      localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders));
+    }
   }
 
-  function renderOrders() {
-    const orders = loadOrders();
+  async function renderOrders() {
+    const orders = await loadOrders();
 
     if (ordersCountBadge) {
       ordersCountBadge.textContent = orders.length;
@@ -1328,17 +1411,17 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       // Status change listener
-      tr.querySelector('.order-status-select')?.addEventListener('change', (e) => {
-        const allOrders = loadOrders();
+      tr.querySelector('.order-status-select')?.addEventListener('change', async (e) => {
+        const allOrders = await loadOrders();
         const found = allOrders.find(o => o.id === order.id);
         if (found) {
           found.deliveryStatus = e.target.value;
-          saveOrders(allOrders);
+          await saveOrders(allOrders);
           if (typeof dbUpdateOrderStatus === 'function') {
             dbUpdateOrderStatus(order.id, e.target.value);
           }
           showToast(`Statut de commande mis à jour : ${e.target.value}`);
-          renderOrders();
+          await renderOrders();
         }
       });
 
@@ -1360,8 +1443,8 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshOrdersBtn.addEventListener('click', () => {
       console.log('Bouton Actualiser cliqué');
       // Recharger immédiatement depuis localStorage (rapide)
-      orders = loadOrders();
-      renderOrders();
+      orders = await loadOrders();
+      await renderOrders();
       showToast('Commandes actualisées !');
 
       // Synchroniser avec Firebase en arrière-plan (sans bloquer)
@@ -1369,8 +1452,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(async () => {
           try {
             await dbGetOrders();
-            orders = loadOrders();
-            renderOrders();
+            orders = await loadOrders();
+            await renderOrders();
             showToast('Synchronisation Firebase terminée');
           } catch (e) {
             console.error('Erreur de synchronisation Firebase:', e);
@@ -1585,7 +1668,7 @@ document.addEventListener('DOMContentLoaded', () => {
               console.warn('Produit non synchronisé:', p.title, err);
             }
           }
-          saveProducts(products);
+          await saveProducts(products);
           if (skipped > 0) {
             showToast(`${synced} produits synchronisés, ${skipped} en échec`, 'warning');
           } else {
@@ -1805,7 +1888,7 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             });
             if (updatedCount > 0) {
-              saveProducts(products);
+              await saveProducts(products);
             }
           }
           showToast(`Collection "${name}" mise à jour !`);
@@ -2023,13 +2106,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateCloudStatusUI();
 
-  // Initial render
-  populateCategoryDropdowns();
-  renderCatalog();
-  updateMetrics();
-  renderOrders();
-  renderCollectionsTable();
-  renderPromosTable();
+  // Initial render (async)
+  (async function initialRender() {
+    populateCategoryDropdowns();
+    await renderCatalog();
+    await updateMetrics();
+    await renderOrders();
+    renderCollectionsTable();
+    renderPromosTable();
+  })();
 
   // Synchronisation Cloud Firebase en arrière-plan
   if (typeof dbGetCollections === 'function') {
@@ -2062,15 +2147,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Sync auto impossible pour', p.title, e);
           }
         }
-        saveProducts(products);
+        await saveProducts(products);
         renderCatalog();
       }
     }).catch(() => {});
   }
 
   if (typeof dbGetOrders === 'function') {
-    dbGetOrders().then(() => {
-      renderOrders();
+    dbGetOrders().then(async () => {
+      await renderOrders();
     }).catch(() => {});
   }
 });

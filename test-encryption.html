@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chiffrement ALLAIN2MARIE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔐 Test Système de Chiffrement ALLAIN2MARIE</h1>
+        
+        <div id="results"></div>
+        
+        <button onclick="runTests()">▶️ Lancer les tests</button>
+        <button onclick="clearResults()">🗑️ Effacer les résultats</button>
+        
+        <div class="data-display">
+            <h3>Données de test :</h3>
+            <div id="testData"></div>
+        </div>
+    </div>
+
+    <script src="db.js"></script>
+    <script>
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runTests() {
+            clearResults();
+            addResult('🚀 Démarrage des tests de chiffrement...', 'info');
+
+            // Données de test
+            const testData = {
+                products: [
+                    { id: 1, title: 'T-Shirt Premium', price: 15000, status: 'published' },
+                    { id: 2, title: 'T-Shirt Basic', price: 10000, status: 'draft' }
+                ],
+                orders: [
+                    { id: 'ORD-001', customer: { name: 'Jean Dupont' }, total: 15000 }
+                ]
+            };
+
+            document.getElementById('testData').textContent = JSON.stringify(testData, null, 2);
+
+            // Test 1: Vérifier que les fonctions de chiffrement existent
+            try {
+                if (typeof encryptData === 'function' && typeof decryptData === 'function') {
+                    addResult('✅ Test 1: Fonctions de chiffrement disponibles', 'success');
+                } else {
+                    addResult('❌ Test 1: Fonctions de chiffrement NON disponibles', 'error');
+                    return;
+                }
+            } catch (e) {
+                addResult('❌ Test 1: Erreur lors de la vérification des fonctions: ' + e.message, 'error');
+                return;
+            }
+
+            // Test 2: Chiffrement d'une chaîne simple
+            try {
+                const testString = "Message secret ALLAIN2MARIE";
+                const encrypted = await encryptData(testString);
+                addResult('✅ Test 2: Chiffrement d\'une chaîne réussi', 'success');
+                addResult('📝 Données chiffrées: ' + encrypted.substring(0, 50) + '...', 'info');
+            } catch (e) {
+                addResult('❌ Test 2: Erreur de chiffrement: ' + e.message, 'error');
+                return;
+            }
+
+            // Test 3: Déchiffrement d'une chaîne
+            try {
+                const testString = "Message secret ALLAIN2MARIE";
+                const encrypted = await encryptData(testString);
+                const decrypted = await decryptData(encrypted);
+                
+                if (decrypted === testString) {
+                    addResult('✅ Test 3: Déchiffrement réussi - données identiques', 'success');
+                } else {
+                    addResult('❌ Test 3: Déchiffrement échoué - données différentes', 'error');
+                    addResult('Attendu: ' + testString, 'error');
+                    addResult('Obtenu: ' + decrypted, 'error');
+                }
+            } catch (e) {
+                addResult('❌ Test 3: Erreur de déchiffrement: ' + e.message, 'error');
+            }
+
+            // Test 4: Chiffrement d'un objet JSON
+            try {
+                const encrypted = await encryptObject(testData.products);
+                addResult('✅ Test 4: Chiffrement d\'objet JSON réussi', 'success');
+                addResult('📝 Objet chiffré: ' + encrypted.substring(0, 50) + '...', 'info');
+            } catch (e) {
+                addResult('❌ Test 4: Erreur de chiffrement d\'objet: ' + e.message, 'error');
+            }
+
+            // Test 5: Déchiffrement d'un objet JSON
+            try {
+                const encrypted = await encryptObject(testData.products);
+                const decrypted = await decryptObject(encrypted);
+                
+                if (JSON.stringify(decrypted) === JSON.stringify(testData.products)) {
+                    addResult('✅ Test 5: Déchiffrement d\'objet JSON réussi', 'success');
+                } else {
+                    addResult('❌ Test 5: Déchiffrement d\'objet échoué', 'error');
+                }
+            } catch (e) {
+                addResult('❌ Test 5: Erreur de déchiffrement d\'objet: ' + e.message, 'error');
+            }
+
+            // Test 6: Test de sauvegarde/chargement chiffré
+            try {
+                const testKey = 'TEST_ENCRYPTION_KEY';
+                await saveEncrypted(testKey, testData.orders);
+                addResult('✅ Test 6: Sauvegarde chiffrée réussie', 'success');
+                
+                const loaded = await loadEncrypted(testKey);
+                if (JSON.stringify(loaded) === JSON.stringify(testData.orders)) {
+                    addResult('✅ Test 6: Chargement déchiffré réussi', 'success');
+                } else {
+                    addResult('❌ Test 6: Chargement déchiffré échoué', 'error');
+                }
+                
+                // Nettoyage
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                addResult('❌ Test 6: Erreur de sauvegarde/chargement: ' + e.message, 'error');
+            }
+
+            // Test 7: Vérifier que les données chiffrées sont différentes des originales
+            try {
+                const original = JSON.stringify(testData);
+                const encrypted = await encryptObject(testData);
+                
+                if (encrypted !== original) {
+                    addResult('✅ Test 7: Les données chiffrées sont différentes des originales', 'success');
+                } else {
+                    addResult('❌ Test 7: Les données chiffrées sont IDENTIQUES aux originales (échec du chiffrement)', 'error');
+                }
+            } catch (e) {
+                addResult('❌ Test 7: Erreur lors de la comparaison: ' + e.message, 'error');
+            }
+
+            addResult('🎉 Tests terminés !', 'info');
+        }
+    </script>
+</body>
+</html>

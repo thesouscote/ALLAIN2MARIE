@@ -21,11 +21,165 @@ const ADMIN_EMAILS = [
   'mokepatrickarmel@gmail.com',
   'allain2marie@gmail.com',
   'thesouscote@gmail.com',
+  'sidibemohamedlamine60@gmail.com',
   // Ajoutez d'autres emails d'admin ici
 ];
 
 let db = null;
 let isFirebaseInitialized = false;
+
+// ==========================================
+// SYSTÈME DE CHIFFREMENT SÉCURISÉ (AES-GCM)
+// ==========================================
+
+const ENCRYPTION_KEY = 'ALLAIN2MARIE_SECURE_KEY_2024'; // Clé de chiffrement (à garder secrète)
+const ENCRYPTION_SALT = 'ALLAIN2MARIE_SALT_SECURE'; // Salt pour le dérivé de clé
+
+/**
+ * Génère une clé de chiffrement à partir de la clé maître
+ */
+async function deriveKey() {
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(ENCRYPTION_KEY),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: encoder.encode(ENCRYPTION_SALT),
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Chiffre une chaîne de caractères
+ */
+async function encryptData(data) {
+  try {
+    const key = await deriveKey();
+    const encoder = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12)); // IV unique pour chaque chiffrement
+    
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encoder.encode(data)
+    );
+    
+    // Combiner IV et données chiffrées pour le stockage
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    
+    // Convertir en base64 pour le stockage
+    return btoa(String.fromCharCode(...combined));
+  } catch (error) {
+    console.error('Erreur de chiffrement:', error);
+    return data; // Fallback: retourner les données non chiffrées en cas d'erreur
+  }
+}
+
+/**
+ * Déchiffre une chaîne de caractères
+ */
+async function decryptData(encryptedData) {
+  try {
+    const key = await deriveKey();
+    const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+    
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+    
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      key,
+      encrypted
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+  } catch (error) {
+    console.error('Erreur de déchiffrement:', error);
+    return encryptedData; // Fallback: retourner les données telles quelles en cas d'erreur
+  }
+}
+
+/**
+ * Chiffre un objet JSON
+ */
+async function encryptObject(obj) {
+  try {
+    const jsonString = JSON.stringify(obj);
+    return await encryptData(jsonString);
+  } catch (error) {
+    console.error('Erreur de chiffrement d\'objet:', error);
+    return JSON.stringify(obj); // Fallback
+  }
+}
+
+/**
+ * Déchiffre un objet JSON
+ */
+async function decryptObject(encryptedString) {
+  try {
+    const decryptedString = await decryptData(encryptedString);
+    return JSON.parse(decryptedString);
+  } catch (error) {
+    console.error('Erreur de déchiffrement d\'objet:', error);
+    try {
+      return JSON.parse(encryptedString); // Fallback: essayer de parser directement
+    } catch {
+      return null;
+    }
+  }
+}
+
+/**
+ * Sauvegarde chiffrée dans localStorage
+ */
+async function saveEncrypted(key, data) {
+  try {
+    const encrypted = await encryptObject(data);
+    localStorage.setItem(key, encrypted);
+  } catch (error) {
+    console.error(`Erreur de sauvegarde chiffrée pour ${key}:`, error);
+    // Fallback: sauvegarder non chiffré
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+}
+
+/**
+ * Chargement déchiffré depuis localStorage
+ */
+async function loadEncrypted(key, defaultValue = null) {
+  try {
+    const encrypted = localStorage.getItem(key);
+    if (!encrypted) return defaultValue;
+    
+    const decrypted = await decryptObject(encrypted);
+    return decrypted !== null ? decrypted : defaultValue;
+  } catch (error) {
+    console.error(`Erreur de chargement déchiffré pour ${key}:`, error);
+    // Fallback: essayer de charger directement
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+}
 
 function toCloudImageUrl(value) {
   if (!value || typeof value !== 'string') return '';
@@ -44,9 +198,10 @@ function getProductImage(product, slot) {
   return '';
 }
 
-function writeLocalProducts(list) {
+async function writeLocalProducts(list) {
   try {
-    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(list));
+    const encrypted = await encryptObject(list);
+    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', encrypted);
   } catch (err) {
     console.warn('Quota localStorage, cache léger:', err);
     const light = list.map(p => ({
@@ -56,7 +211,8 @@ function writeLocalProducts(list) {
         back: toCloudImageUrl(p.images?.back)
       }
     }));
-    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(light));
+    const encryptedLight = await encryptObject(light);
+    localStorage.setItem('ALLAIN2MARIE_PRODUCTS', encryptedLight);
   }
 }
 
@@ -94,7 +250,7 @@ function initFirebaseDB() {
 
 // 2. Gestion des Produits (Catalogue & Stocks)
 async function dbGetProducts() {
-  const local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+  const local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
   if (!isFirebaseInitialized || !db) return local;
 
   try {
@@ -124,7 +280,7 @@ async function dbSaveProduct(product) {
     throw new Error('Produit invalide');
   }
 
-  let local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+  let local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
   const idx = local.findIndex(p => p.id === product.id);
   if (idx !== -1) {
     local[idx] = product;
@@ -143,7 +299,7 @@ async function dbSaveProduct(product) {
   }
   await db.collection('products').doc(cloudProduct.id).set(cloudProduct);
 
-  local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+  local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
   const cloudIdx = local.findIndex(p => p.id === cloudProduct.id);
   if (cloudIdx !== -1) local[cloudIdx] = cloudProduct;
   else local.unshift(cloudProduct);
@@ -155,9 +311,9 @@ async function dbSaveProduct(product) {
 
 async function dbDeleteProduct(productId) {
   // 1. Suppression locale
-  let local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
+  let local = await loadEncrypted('ALLAIN2MARIE_PRODUCTS', []);
   local = local.filter(p => p.id !== productId);
-  localStorage.setItem('ALLAIN2MARIE_PRODUCTS', JSON.stringify(local));
+  await saveEncrypted('ALLAIN2MARIE_PRODUCTS', local);
 
   // 2. Suppression Cloud Firebase
   if (isFirebaseInitialized && db) {
@@ -171,9 +327,9 @@ async function dbDeleteProduct(productId) {
 }
 
 // 3. Gestion des Commandes & Coordonnées de Livraison
-function sanitizeLocalOrders() {
+async function sanitizeLocalOrders() {
   try {
-    const raw = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+    const raw = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
     const uniqueMap = new Map();
     raw.forEach(o => {
       if (o && o.id && !uniqueMap.has(o.id)) {
@@ -181,7 +337,7 @@ function sanitizeLocalOrders() {
       }
     });
     const uniqueOrders = Array.from(uniqueMap.values());
-    localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(uniqueOrders.slice(0, 50)));
+    await saveEncrypted('ALLAIN2MARIE_ORDERS', uniqueOrders.slice(0, 50));
     return uniqueOrders;
   } catch (e) {
     return [];
@@ -189,7 +345,7 @@ function sanitizeLocalOrders() {
 }
 
 async function dbGetOrders() {
-  const local = sanitizeLocalOrders();
+  const local = await sanitizeLocalOrders();
   if (!isFirebaseInitialized || !db) return local;
 
   try {
@@ -208,7 +364,7 @@ async function dbGetOrders() {
       const mergedOrders = Array.from(orderMap.values())
         .sort((a, b) => ((a.createdAt || '') < (b.createdAt || '') ? 1 : -1))
         .slice(0, 50);
-      localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(mergedOrders));
+      await saveEncrypted('ALLAIN2MARIE_ORDERS', mergedOrders);
       return mergedOrders;
     }
   } catch (err) {
@@ -227,7 +383,7 @@ async function dbSaveOrder(order) {
     local.unshift(order);
   }
   local = local.slice(0, 50);
-  localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(local));
+  await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
 
   // 2. Sauvegarde Cloud Firebase
   if (isFirebaseInitialized && db) {
@@ -241,11 +397,11 @@ async function dbSaveOrder(order) {
 }
 
 async function dbUpdateOrderStatus(orderId, newStatus) {
-  let local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+  let local = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
   const found = local.find(o => o.id === orderId);
   if (found) {
     found.deliveryStatus = newStatus;
-    localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(local));
+    await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
   }
 
   if (isFirebaseInitialized && db) {
@@ -259,9 +415,9 @@ async function dbUpdateOrderStatus(orderId, newStatus) {
 }
 
 async function dbDeleteOrder(orderId) {
-  let local = JSON.parse(localStorage.getItem('ALLAIN2MARIE_ORDERS') || '[]');
+  let local = await loadEncrypted('ALLAIN2MARIE_ORDERS', []);
   local = local.filter(o => o.id !== orderId);
-  localStorage.setItem('ALLAIN2MARIE_ORDERS', JSON.stringify(local));
+  await saveEncrypted('ALLAIN2MARIE_ORDERS', local);
 
   if (isFirebaseInitialized && db) {
     try {
@@ -301,7 +457,7 @@ async function dbGetCollections() {
     const doc = await db.collection('settings').doc('collections').get();
     if (doc.exists && doc.data().list && Array.isArray(doc.data().list) && doc.data().list.length > 0) {
       const cloudList = doc.data().list;
-      localStorage.setItem('ALLAIN2MARIE_COLLECTIONS', JSON.stringify(cloudList));
+      await saveEncrypted('ALLAIN2MARIE_COLLECTIONS', cloudList);
       return cloudList;
     } else {
       // Seed Firebase with default collections if not yet present
@@ -317,7 +473,7 @@ async function dbGetCollections() {
 }
 
 async function dbSaveCollections(collections) {
-  localStorage.setItem('ALLAIN2MARIE_COLLECTIONS', JSON.stringify(collections));
+  await saveEncrypted('ALLAIN2MARIE_COLLECTIONS', collections);
 
   if (isFirebaseInitialized && db) {
     try {
