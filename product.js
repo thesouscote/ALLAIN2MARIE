@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
 
-    // Charger d'abord depuis localStorage (rapide, comme index.html)
+    // Charger d'abord depuis localStorage (rapide, comme accueil.html)
     const localProducts = JSON.parse(localStorage.getItem('ALLAIN2MARIE_PRODUCTS') || '[]');
     let products = localProducts;
 
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (currentProduct) {
-      // Afficher immédiatement avec les données locales (comme index.html)
+      // Afficher immédiatement avec les données locales (comme accueil.html)
       renderProductContent();
 
       // Puis synchroniser en arrière-plan avec Firebase
@@ -1268,11 +1268,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           successOv.classList.add('active');
           document.body.style.overflow = 'hidden';
           setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = 'accueil.html';
           }, 3000);
         } else {
           document.body.style.overflow = '';
-          window.location.href = 'index.html';
+          window.location.href = 'accueil.html';
         }
       }
     }, 1000);
@@ -1410,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const li = document.createElement('li');
       li.className = 'nav-menu-item';
       li.innerHTML = `
-        <a href="index.html?category=${col.name.toLowerCase()}">
+        <a href="accueil.html?category=${col.name.toLowerCase()}">
           <span>${col.name}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
@@ -1589,7 +1589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Redirect to home page
       setTimeout(() => {
-        window.location.href = 'index.html';
+        window.location.href = 'accueil.html';
       }, 1000);
     });
   }

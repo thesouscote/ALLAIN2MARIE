@@ -42,7 +42,7 @@ echo Installation de Python recommandee: https://www.python.org/downloads/
 echo.
 echo En attendant, vous pouvez ouvrir les fichiers HTML directement:
 echo - login.html (page de connexion admin)
-echo - index.html (boutique principale)
+echo - accueil.html (boutique principale)
 pause
 
 :end

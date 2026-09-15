@@ -12,7 +12,8 @@
  * 5. Exécuter: node set-admin-claims.js
  */
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 
 // Liste des emails administrateurs
 const ADMIN_EMAILS = [
@@ -24,22 +25,24 @@ const ADMIN_EMAILS = [
 ];
 
 // Initialiser Firebase Admin avec le compte de service
+let auth;
 try {
   const serviceAccount = require('./service-account-key.json');
+  console.log('Fichier de compte de service chargé:', serviceAccount.project_id);
   
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+  const app = initializeApp({
+    credential: cert(serviceAccount)
   });
   
+  auth = getAuth(app);
   console.log('Firebase Admin initialisé avec succès');
 } catch (error) {
   console.error('Erreur lors de l\'initialisation Firebase Admin:');
+  console.error('Détail de l\'erreur:', error.message);
   console.error('Veuillez télécharger le fichier service-account-key.json depuis la console Firebase');
   console.error('Console Firebase: Project Settings > Service Accounts > Generate New Private Key');
   process.exit(1);
 }
-
-const auth = admin.auth();
 
 async function setAdminClaims() {
   console.log('Définition des Custom Claims pour les administrateurs...');

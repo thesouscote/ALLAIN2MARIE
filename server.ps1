@@ -7,7 +7,7 @@ while($listener.IsListening) {
     $request = $context.Request
     $response = $context.Response
     $localPath = $request.Url.LocalPath
-    if($localPath -eq '/') { $localPath = '/index.html' }
+    if($localPath -eq '/') { $localPath = '/accueil.html' }
     $filePath = Join-Path (Get-Location) $localPath.TrimStart('/')
     if(Test-Path $filePath) {
         $content = [System.IO.File]::ReadAllBytes($filePath)

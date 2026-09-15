@@ -40,12 +40,53 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentPdpQty = 1;
   let currentCategory = 'all';
 
+  // Function to update page title based on category
+  function updatePageTitle(categoryName) {
+    const categoryTitle = document.getElementById('categoryTitle');
+    const pageTitleTemplate = document.getElementById('pageTitleTemplate');
+    
+    if (categoryTitle) {
+      categoryTitle.textContent = categoryName || 'Accueil';
+    }
+    
+    if (pageTitleTemplate) {
+      const template = pageTitleTemplate.dataset.template;
+      document.title = template.replace('{category}', categoryName || 'Accueil');
+    }
+  }
+
   // Check URL for category parameter
   const urlParams = new URLSearchParams(window.location.search);
   const categoryParam = urlParams.get('category');
   if (categoryParam) {
     currentCategory = categoryParam;
     console.log('Catégorie depuis URL:', categoryParam);
+    
+    // Update page title for URL category parameter
+    // First try to find the category name from filter items, otherwise use the parameter directly
+    setTimeout(() => {
+      // Try exact match first
+      let categoryItem = Array.from(filterDropdownItems).find(item => 
+        item.dataset.category === categoryParam
+      );
+      
+      // If not found, try case-insensitive match with decoded category
+      if (!categoryItem) {
+        const decodedCategory = decodeURIComponent(categoryParam);
+        categoryItem = Array.from(filterDropdownItems).find(item => 
+          item.dataset.category.toLowerCase() === decodedCategory.toLowerCase() ||
+          item.textContent.trim().toLowerCase() === decodedCategory.toLowerCase()
+        );
+      }
+      
+      if (categoryItem) {
+        updatePageTitle(categoryItem.textContent.trim());
+      } else {
+        // If no filter item found, use the category parameter directly (capitalized)
+        const categoryName = decodeURIComponent(categoryParam).replace(/-/g, ' ');
+        updatePageTitle(categoryName);
+      }
+    }, 100);
   } else {
     // Nettoyer l'URL pour enlever tout paramètre category seulement si on n'a pas de paramètre
     const cleanUrl = window.location.pathname;
@@ -676,6 +717,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     storefrontGrid.innerHTML = '';
 
+    // Update page title based on category
+    if (category !== 'all') {
+      // Find the category name from filter items
+      const categoryItem = Array.from(filterDropdownItems).find(item => 
+        item.dataset.category === category
+      );
+      if (categoryItem) {
+        updatePageTitle(categoryItem.textContent.trim());
+      }
+    } else {
+      updatePageTitle('Accueil');
+    }
+
     // Normaliser le nom de la catégorie cible
     const targetCategory = category.toLowerCase().trim();
 
@@ -1125,6 +1179,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (item.dataset.category === category) {
         item.classList.add('active');
         currentFilterLabel.textContent = item.textContent.trim();
+        // Update page title
+        updatePageTitle(item.textContent.trim());
       } else {
         item.classList.remove('active');
       }
@@ -1232,11 +1288,11 @@ document.addEventListener('DOMContentLoaded', () => {
           successOv.classList.add('active');
           document.body.style.overflow = 'hidden';
           setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = 'accueil.html';
           }, 3000);
         } else {
           document.body.style.overflow = '';
-          window.location.href = 'index.html';
+          window.location.href = 'accueil.html';
         }
       }
     }, 1000);
@@ -1315,14 +1371,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const navMenuList = document.getElementById('navMenuList');
     if (!navMenuList) return;
 
-    // Récupérer les éléments statiques (Boutique et Mon Compte)
+    // Récupérer les éléments statiques (Accueil et Mon Compte)
     const menuItems = Array.from(navMenuList.querySelectorAll('.nav-menu-item'));
-    const boutiqueItem = menuItems.find(item => item.textContent.includes('Boutique'));
+    const accueilItem = menuItems.find(item => item.textContent.includes('Accueil'));
     const monCompteItem = menuItems.find(item => item.textContent.includes('Mon Compte'));
 
-    // Supprimer tous les éléments sauf Boutique et Mon Compte
+    // Supprimer tous les éléments sauf Accueil et Mon Compte
     menuItems.forEach(item => {
-      if (item !== boutiqueItem && item !== monCompteItem) {
+      if (item !== accueilItem && item !== monCompteItem) {
         item.remove();
       }
     });
@@ -1332,15 +1388,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const li = document.createElement('li');
       li.className = 'nav-menu-item';
       li.innerHTML = `
-        <a href="index.html?category=${encodeURIComponent(col.name)}">
+        <a href="accueil.html?category=${encodeURIComponent(col.name)}">
           <span>${col.name}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </a>
       `;
-      // Insérer après Boutique et avant Mon Compte
+      // Insérer après Accueil et avant Mon Compte
       if (monCompteItem) {
         navMenuList.insertBefore(li, monCompteItem);
-      } else if (boutiqueItem) {
+      } else if (accueilItem) {
         navMenuList.appendChild(li);
       } else {
         navMenuList.appendChild(li);
@@ -1411,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showLuxuryToast('Vous avez été déconnecté', 'success');
 
       setTimeout(() => {
-        window.location.href = 'index.html';
+        window.location.href = 'accueil.html';
       }, 1000);
     });
   }
