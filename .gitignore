@@ -1,0 +1,17 @@
+# Fichiers de sécurité
+service-account-key.json
+*.key
+credentials.json
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Fichiers temporaires
+*.log
+.DS_Store
+Thumbs.db
+
+# Fichiers de build
+dist/
+build/

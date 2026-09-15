@@ -225,14 +225,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Firebase Auth watcher ─────────────────────────────────
   if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged(user => {
+    firebase.auth().onAuthStateChanged(async user => {
       if (user) {
         // Vérifier si l'utilisateur est un admin - si oui, ne pas l'afficher comme connecté dans l'espace client
-        if (typeof dbIsAdminUser === 'function' && dbIsAdminUser(user.email)) {
-          console.log('Utilisateur admin détecté, masquage dans l\'espace client');
-          onUserLoggedOut(); // Traiter les admins comme non-connectés dans l'espace client
+        if (typeof dbIsAdminUser === 'function') {
+          try {
+            const isAdmin = await dbIsAdminUser();
+            if (isAdmin) {
+              console.log('Utilisateur admin détecté, masquage dans l\'espace client');
+              onUserLoggedOut(); // Traiter les admins comme non-connectés dans l'espace client
+            } else {
+              onUserLoggedIn(user); // Seuls les clients réguliers sont affichés comme connectés
+            }
+          } catch (err) {
+            console.error('Erreur lors de la vérification admin:', err);
+            onUserLoggedIn(user); // En cas d'erreur, traiter comme utilisateur normal
+          }
         } else {
-          onUserLoggedIn(user); // Seuls les clients réguliers sont affichés comme connectés
+          onUserLoggedIn(user); // Si la fonction n'est pas disponible, traiter comme utilisateur normal
         }
       } else {
         onUserLoggedOut();

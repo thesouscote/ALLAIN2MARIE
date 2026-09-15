@@ -54,11 +54,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         console.log('Authentification Google réussie pour:', user.email);
 
-        // Vérifier si l'email est autorisé comme admin
-        if (typeof dbIsAdminUser === 'function' && !dbIsAdminUser(user.email)) {
-          console.warn('Accès refusé: email non autorisé:', user.email);
+        // Vérifier si l'utilisateur a les Custom Claims admin
+        if (typeof dbIsAdminUser === 'function') {
+          const isAdmin = await dbIsAdminUser();
+          if (!isAdmin) {
+            console.warn('Accès refusé: Custom Claims admin non défini pour:', user.email);
+            await firebase.auth().signOut();
+            throw new Error('Accès refusé: utilisateur non autorisé pour l\'administration');
+          }
+        } else {
+          console.warn('Fonction dbIsAdminUser non disponible');
           await firebase.auth().signOut();
-          throw new Error('Accès refusé: email non autorisé pour l\'administration');
+          throw new Error('Erreur système: fonction de vérification admin non disponible');
         }
 
         console.log('Utilisateur autorisé, redirection vers admin...');
@@ -134,11 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
       
       console.log('Authentification Firebase réussie pour:', user.email);
       
-      // Vérifier si l'email est autorisé comme admin
-      if (typeof dbIsAdminUser === 'function' && !dbIsAdminUser(user.email)) {
-        console.warn('Accès refusé: email non autorisé:', user.email);
+      // Vérifier si l'utilisateur a les Custom Claims admin
+      if (typeof dbIsAdminUser === 'function') {
+        const isAdmin = await dbIsAdminUser();
+        if (!isAdmin) {
+          console.warn('Accès refusé: Custom Claims admin non défini pour:', user.email);
+          await firebase.auth().signOut();
+          throw new Error('Accès refusé: utilisateur non autorisé pour l\'administration');
+        }
+      } else {
+        console.warn('Fonction dbIsAdminUser non disponible');
         await firebase.auth().signOut();
-        throw new Error('Accès refusé: email non autorisé pour l\'administration');
+        throw new Error('Erreur système: fonction de vérification admin non disponible');
       }
       
       console.log('Utilisateur autorisé, redirection vers admin...');

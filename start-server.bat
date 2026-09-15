@@ -41,7 +41,6 @@ echo Aucun serveur web trouve (Python, PHP, ou Node.js)
 echo Installation de Python recommandee: https://www.python.org/downloads/
 echo.
 echo En attendant, vous pouvez ouvrir les fichiers HTML directement:
-echo - test-security.html (pour tester la securite)
 echo - login.html (page de connexion admin)
 echo - index.html (boutique principale)
 pause

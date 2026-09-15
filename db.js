@@ -16,15 +16,6 @@ const DEFAULT_FIREBASE_CONFIG = {
   appId: "1:648589896167:web:3bd8a17a73423c07703542"
 };
 
-// Liste des administrateurs autorisés (par email)
-const ADMIN_EMAILS = [
-  'mokepatrickarmel@gmail.com',
-  'allain2marie@gmail.com',
-  'thesouscote@gmail.com',
-  'sidibemohamedlamine60@gmail.com',
-  // Ajoutez d'autres emails d'admin ici
-];
-
 let db = null;
 let isFirebaseInitialized = false;
 
@@ -799,31 +790,37 @@ async function subscribeToMailchimp(email, config = null) {
 
 
 
-// 9. Vérification Admin (sécurisée)
-function dbIsAdminUser(email) {
-  if (!email || typeof email !== 'string') {
-    console.warn('dbIsAdminUser: email invalide ou manquant');
+// 9. Vérification Admin (sécurisée avec Firebase Custom Claims)
+// Cette fonction vérifie les Custom Claims Firebase côté client
+// Les Custom Claims sont définis côté serveur et ne peuvent pas être falsifiés
+async function dbIsAdminUser() {
+  try {
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      console.warn('dbIsAdminUser: Firebase non initialisé');
+      return false;
+    }
+    
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      console.warn('dbIsAdminUser: aucun utilisateur connecté');
+      return false;
+    }
+    
+    // Récupérer le token ID qui contient les Custom Claims
+    const idTokenResult = await user.getIdTokenResult();
+    const isAdmin = idTokenResult.claims.admin === true;
+    
+    if (!isAdmin) {
+      console.warn('dbIsAdminUser: accès refusé pour utilisateur:', user.email);
+    } else {
+      console.log('dbIsAdminUser: accès autorisé pour utilisateur:', user.email);
+    }
+    
+    return isAdmin;
+  } catch (error) {
+    console.error('dbIsAdminUser: erreur lors de la vérification:', error);
     return false;
   }
-  
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  // Validation du format email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(normalizedEmail)) {
-    console.warn('dbIsAdminUser: format email invalide:', normalizedEmail);
-    return false;
-  }
-  
-  const isAdmin = ADMIN_EMAILS.includes(normalizedEmail);
-  
-  if (!isAdmin) {
-    console.warn('dbIsAdminUser: accès refusé pour email:', normalizedEmail);
-  } else {
-    console.log('dbIsAdminUser: accès autorisé pour email:', normalizedEmail);
-  }
-  
-  return isAdmin;
 }
 
 // Initialisation immédiate au chargement du script

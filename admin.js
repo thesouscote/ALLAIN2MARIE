@@ -234,12 +234,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Un utilisateur est présent, on peut prendre une décision
         unsubscribe();
 
-        // Vérification stricte via liste des admins
-        if (typeof dbIsAdminUser === 'function' && dbIsAdminUser(user.email)) {
-          console.log(' Accès admin autorisé pour:', user.email);
-          resolve(true);
+        // Vérification stricte via Firebase Custom Claims
+        if (typeof dbIsAdminUser === 'function') {
+          dbIsAdminUser().then(isAdmin => {
+            if (isAdmin) {
+              console.log(' Accès admin autorisé pour:', user.email);
+              resolve(true);
+            } else {
+              console.warn(' Accès refusé: Custom Claims admin non défini pour:', user.email);
+              firebase.auth().signOut();
+              resolve(false);
+            }
+          }).catch(err => {
+            console.error(' Erreur lors de la vérification admin:', err);
+            firebase.auth().signOut();
+            resolve(false);
+          });
         } else {
-          console.warn(' Accès refusé: email non autorisé:', user.email);
+          console.warn(' Fonction dbIsAdminUser non disponible');
           firebase.auth().signOut();
           resolve(false);
         }
