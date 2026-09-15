@@ -3,9 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ALLAIN2MARIE - Marque de Streetwear et T-Shirts Exclusifs">
+  <meta name="description" content="ALLAIN2MARIE - Marque de Streetwear et T-Shirts Exclusifs. Découvrez notre collection de t-shirts streetwear premium aux designs uniques.">
   <title>ALLAIN2MARIE | Accueil</title>
   <meta id="pageTitleTemplate" data-template="ALLAIN2MARIE | {category}">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://allain2marie.vercel.app/accueil.html">
+  <meta property="og:title" content="ALLAIN2MARIE | Streetwear Exclusif">
+  <meta property="og:description" content="Découvrez notre collection de t-shirts streetwear premium aux designs uniques. Qualité supérieure, style inégalé.">
+  <meta property="og:image" content="https://allain2marie.vercel.app/logo.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://allain2marie.vercel.app/accueil.html">
+  <meta property="twitter:title" content="ALLAIN2MARIE | Streetwear Exclusif">
+  <meta property="twitter:description" content="Découvrez notre collection de t-shirts streetwear premium aux designs uniques. Qualité supérieure, style inégalé.">
+  <meta property="twitter:image" content="https://allain2marie.vercel.app/logo.png">
   
   <!-- Firebase SDK (chargé avant la vérification) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -63,12 +77,31 @@
         
         console.log('Site accessible');
         
-        // Afficher le body seulement si le site est accessible
-        document.body.style.display = 'block';
+        // Masquer le loading overlay
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'none';
+        }
+        
+        // Afficher le contenu principal
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.style.display = 'block';
+        }
       } catch (error) {
         console.log('Erreur lors de la vérification du statut du site:', error);
-        // En cas d'erreur, afficher le body par sécurité
-        document.body.style.display = 'block';
+        
+        // Masquer le loading overlay
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'none';
+        }
+        
+        // En cas d'erreur, afficher le contenu principal par sécurité
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+          mainContent.style.display = 'block';
+        }
       }
     }
     
@@ -120,7 +153,50 @@
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2">
   <style>
-    body { display: none; }
+    /* Loading Spinner */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #000000;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .loading-text {
+      margin-top: 1rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1rem;
+      color: #64748b;
+    }
+    
+    .main-content {
+      display: none;
+      animation: fadeIn 0.5s ease forwards;
+    }
   </style>
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-W218QCF655"></script>
@@ -132,6 +208,11 @@
   </script>
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Chargement...</div>
+  </div>
 
   <!-- Header ALLAIN2MARIE -->
   <header class="luxury-header">
@@ -180,7 +261,7 @@
   </header>
 
   <!-- Main Content Wrapper -->
-  <div class="main-content-wrapper">
+  <div class="main-content-wrapper main-content">
   <!-- Main Storefront Container -->
   <div class="container store-container">
 
@@ -510,6 +591,6 @@
     <div style="font-size:0.82rem; color:rgba(255,255,255,0.6);">Retour à la boutique…</div>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=4" defer></script>
 </body>
 </html>

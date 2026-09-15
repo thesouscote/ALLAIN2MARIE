@@ -18,7 +18,8 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 16px 30px rgba(0, 0, 0, 0.08);
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-logo: 'Bebas Neue', 'Anton', sans-serif;
 }
@@ -724,7 +725,8 @@ body {
   width: 100%;
   cursor: pointer;
   padding: 0.5rem 0.25rem;
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+  will-change: transform;
 }
 
 .store-card-img-wrap {
