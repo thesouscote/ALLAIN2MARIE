@@ -693,11 +693,12 @@ body {
 }
 
 .section-heading {
-  font-size: 4rem;
+  font-size: 5rem;
   font-weight: 900;
   letter-spacing: -0.04em;
   line-height: 1.02;
   color: #000000;
+  text-transform: uppercase;
 }
 
 .section-subheading {
@@ -789,7 +790,7 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 0;
+  gap: 0.5rem;
 }
 
 /* Quick Add to Cart Button Overlay */
@@ -2787,7 +2788,7 @@ button, a {
   }
 
   .section-heading {
-    font-size: 2.5rem;
+    font-size: 3rem;
     letter-spacing: -0.03em;
   }
 }
