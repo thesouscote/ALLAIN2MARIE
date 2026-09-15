@@ -21,15 +21,35 @@
         
         console.log('Vérification du statut du site...');
         
-        // SEULEMENT localStorage (plus fiable, sans conflit Firebase)
-        const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
-        if (localStatus) {
-          isOpen = JSON.parse(localStatus).isOpen !== false;
-          console.log('Statut localStorage:', isOpen ? 'OUVERT' : 'FERMÉ');
-          console.log('Valeur localStorage:', localStatus);
+        // PRIORITÉ : Firebase (pour synchronisation entre appareils)
+        if (typeof db !== 'undefined' && db) {
+          console.log('Vérification via Firebase...');
+          try {
+            const siteDoc = await db.collection('settings').doc('site').get();
+            if (siteDoc.exists) {
+              isOpen = siteDoc.data().isOpen !== false;
+              console.log('Statut Firebase:', isOpen ? 'OUVERT' : 'FERMÉ');
+            } else {
+              console.log('Aucun document site trouvé dans Firebase, site ouvert par défaut');
+            }
+          } catch (error) {
+            console.log('Erreur Firebase:', error);
+            // Fallback sur localStorage si Firebase échoue
+            const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+            if (localStatus) {
+              isOpen = JSON.parse(localStatus).isOpen !== false;
+              console.log('Statut localStorage (fallback):', isOpen ? 'OUVERT' : 'FERMÉ');
+            }
+          }
         } else {
-          console.log('Aucun statut local trouvé, site ouvert par défaut');
-          isOpen = true;
+          console.log('Firebase non disponible, vérification via localStorage');
+          const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+          if (localStatus) {
+            isOpen = JSON.parse(localStatus).isOpen !== false;
+            console.log('Statut localStorage:', isOpen ? 'OUVERT' : 'FERMÉ');
+          } else {
+            console.log('Aucun statut local trouvé, site ouvert par défaut');
+          }
         }
         
         console.log('Statut final:', isOpen ? 'OUVERT' : 'FERMÉ');
