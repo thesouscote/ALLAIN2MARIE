@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALLAIN2MARIE | Prochain Drop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .coming-soon-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #000000;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .coming-soon-logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+
+    .coming-soon-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .coming-soon-subtitle {
+      font-size: 1.2rem;
+      font-weight: 400;
+      margin-bottom: 3rem;
+      color: #64748b;
+    }
+
+    .countdown-container {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .countdown-item {
+      padding: 2rem 3rem;
+      min-width: 140px;
+    }
+
+    .countdown-number {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      color: #000000;
+    }
+
+    .countdown-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+    }
+
+    .drop-info {
+      padding: 2rem;
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+
+    .drop-info h3 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .drop-info p {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #64748b;
+    }
+
+
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    @media (max-width: 768px) {
+      .coming-soon-title {
+        font-size: 2rem;
+      }
+
+      .countdown-container {
+        gap: 1rem;
+      }
+
+      .countdown-item {
+        padding: 1rem 1.5rem;
+        min-width: 70px;
+      }
+
+      .countdown-number {
+        font-size: 3.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="coming-soon-container">
+    <img src="logo.png" alt="ALLAIN2MARIE" class="coming-soon-logo">
+    
+    <h1 class="coming-soon-title">Prochain Drop</h1>
+    <p class="coming-soon-subtitle"> quelque chose d'exceptionnel arrive</p>
+    
+    <div class="countdown-container" id="countdown">
+      <div class="countdown-item">
+        <div class="countdown-number" id="days">00</div>
+        <div class="countdown-label">Jours</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-number" id="hours">00</div>
+        <div class="countdown-label">Heures</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-number" id="minutes">00</div>
+        <div class="countdown-label">Minutes</div>
+      </div>
+      <div class="countdown-item">
+        <div class="countdown-number" id="seconds">00</div>
+        <div class="countdown-label">Secondes</div>
+      </div>
+    </div>
+
+    <div class="drop-info">
+      <h3 id="dropTitle">Chargement...</h3>
+      <p id="dropDescription">Veuillez patienter pendant le chargement des informations du drop.</p>
+    </div>
+  </div>
+
+  <script src="db.js"></script>
+  <script>
+    // Configuration du drop (sera remplacée par les données de Firebase)
+    let dropConfig = {
+      title: "PROCHAIN DROP",
+      description: "Préparez-vous pour notre nouvelle collection exclusive. Quantités limitées.",
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 jours à partir de maintenant
+    };
+
+    let siteStatus = {
+      isOpen: true,
+      isDropActive: false
+    };
+
+    // Charger la configuration depuis Firebase si disponible
+    async function loadDropConfig() {
+      try {
+        // Vérifier si on vient d'être redirigé depuis accueil (éviter boucle)
+        const redirectingTo = sessionStorage.getItem('redirectingTo');
+        
+        if (redirectingTo === 'coming-soon') {
+          console.log('Redirection depuis accueil détectée, arrêt de la vérification - affichage de la page drop');
+          sessionStorage.removeItem('redirectingTo');
+          updateDropInfo();
+          startCountdown();
+          return;
+        }
+        
+        // Si on a été redirigé vers accueil, ne pas essayer de rediriger à nouveau
+        if (redirectingTo === 'accueil') {
+          console.log('Redirection vers accueil détectée, arrêt de la vérification');
+          sessionStorage.removeItem('redirectingTo');
+          updateDropInfo();
+          startCountdown();
+          return;
+        }
+        
+        if (typeof db !== 'undefined' && db) {
+          // Vérifier le statut du site
+          const siteDoc = await db.collection('settings').doc('site').get();
+          if (siteDoc.exists) {
+            siteStatus.isOpen = siteDoc.data().isOpen !== false;
+          }
+          
+          // Vérifier la configuration du drop
+          const settingsDoc = await db.collection('settings').doc('drop').get();
+          if (settingsDoc.exists) {
+            const data = settingsDoc.data();
+            if (data.title) dropConfig.title = data.title;
+            if (data.description) dropConfig.description = data.description;
+            if (data.dropDate) dropConfig.date = new Date(data.dropDate);
+            siteStatus.isDropActive = data.isActive === true;
+          }
+          
+          // Si le site est ouvert et qu'il n'y a pas de drop actif, rediriger
+          if (siteStatus.isOpen && !siteStatus.isDropActive) {
+            console.log('Site ouvert sans drop actif, redirection vers accueil');
+            sessionStorage.setItem('redirectingTo', 'accueil');
+            window.location.href = 'accueil.html';
+            return;
+          }
+        } else {
+          // Mode local
+          const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+          if (localStatus) {
+            siteStatus.isOpen = JSON.parse(localStatus).isOpen !== false;
+          }
+          
+          const localConfig = localStorage.getItem('ALLAIN2MARIE_DROP_CONFIG');
+          if (localConfig) {
+            const data = JSON.parse(localConfig);
+            if (data.title) dropConfig.title = data.title;
+            if (data.description) dropConfig.description = data.description;
+            if (data.dropDate) dropConfig.date = new Date(data.dropDate);
+            siteStatus.isDropActive = data.isActive === true;
+          }
+          
+          if (siteStatus.isOpen && !siteStatus.isDropActive) {
+            sessionStorage.setItem('redirectingTo', 'accueil');
+            window.location.href = 'accueil.html';
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Erreur lors du chargement de la configuration:', error);
+      }
+      
+      updateDropInfo();
+      startCountdown();
+    }
+
+    function updateDropInfo() {
+      if (!siteStatus.isOpen && !siteStatus.isDropActive) {
+        document.getElementById('dropTitle').textContent = "SITE FERMÉ";
+        document.getElementById('dropDescription').textContent = "Le site est actuellement fermé. Revenez plus tard.";
+        document.getElementById('countdown').style.display = 'none';
+      } else if (siteStatus.isDropActive) {
+        document.getElementById('dropTitle').textContent = dropConfig.title;
+        document.getElementById('dropDescription').textContent = dropConfig.description;
+        document.getElementById('countdown').style.display = 'flex';
+      } else {
+        document.getElementById('dropTitle').textContent = "PROCHAIN DROP";
+        document.getElementById('dropDescription').textContent = "Préparez-vous pour notre nouvelle collection exclusive. Quantités limitées.";
+        document.getElementById('countdown').style.display = 'flex';
+      }
+    }
+
+    function startCountdown() {
+      function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = dropConfig.date.getTime() - now;
+
+        if (distance < 0) {
+          // Le drop est arrivé, vérifier si le site doit s'ouvrir
+          if (siteStatus.isDropActive) {
+            window.location.href = 'accueil.html';
+            return;
+          }
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        document.getElementById('days').textContent = String(days).padStart(2, '0');
+        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+      }
+
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+
+    // Charger la configuration au démarrage
+    loadDropConfig();
+  </script>
+</body>
+</html>

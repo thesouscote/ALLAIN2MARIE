@@ -20,6 +20,62 @@
   </script>
 </head>
 <body>
+  <script>
+    async function checkSiteStatus() {
+      try {
+        let isOpen = true;
+        
+        if (typeof db !== 'undefined' && db) {
+          const siteDoc = await db.collection('settings').doc('site').get();
+          if (siteDoc.exists) {
+            isOpen = siteDoc.data().isOpen !== false;
+          }
+        } else {
+          const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+          if (localStatus) {
+            isOpen = JSON.parse(localStatus).isOpen !== false;
+          }
+        }
+        
+        if (!isOpen) {
+          window.location.href = 'coming-soon.html';
+          return;
+        }
+        
+        if (typeof db !== 'undefined' && db) {
+          const dropDoc = await db.collection('settings').doc('drop').get();
+          if (dropDoc.exists) {
+            const dropConfig = dropDoc.data();
+            if (dropConfig.isActive === true) {
+              const dropDate = new Date(dropConfig.dropDate);
+              const now = new Date();
+              if (now < dropDate) {
+                window.location.href = 'coming-soon.html';
+                return;
+              }
+            }
+          }
+        } else {
+          const localConfig = localStorage.getItem('ALLAIN2MARIE_DROP_CONFIG');
+          if (localConfig) {
+            const dropConfig = JSON.parse(localConfig);
+            if (dropConfig.isActive === true) {
+              const dropDate = new Date(dropConfig.dropDate);
+              const now = new Date();
+              if (now < dropDate) {
+                window.location.href = 'coming-soon.html';
+                return;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Erreur lors de la vérification du statut du site:', error);
+      }
+    }
+    
+    checkSiteStatus();
+  </script>
 
   <!-- Header ALLAIN2MARIE -->
   <header class="luxury-header">

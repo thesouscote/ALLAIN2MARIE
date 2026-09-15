@@ -453,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabNavOrders = document.getElementById('tabNavOrders');
   const tabNavCollections = document.getElementById('tabNavCollections');
   const tabNavPromos = document.getElementById('tabNavPromos');
+  const tabNavDrops = document.getElementById('tabNavDrops');
   const tabNavAddProduct = document.getElementById('tabNavAddProduct');
 
   async function switchTab(tabId) {
@@ -475,6 +476,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tabNavPromos) {
       tabNavPromos.className = tabId === 'promos-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
     }
+    if (tabNavDrops) {
+      tabNavDrops.className = tabId === 'drops-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
 
     if (tabId === 'catalog-tab') {
       await renderCatalog();
@@ -492,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tabNavOrders) tabNavOrders.addEventListener('click', async () => await switchTab('orders-tab'));
   if (tabNavCollections) tabNavCollections.addEventListener('click', async () => await switchTab('collections-tab'));
   if (tabNavPromos) tabNavPromos.addEventListener('click', async () => await switchTab('promos-tab'));
+  if (tabNavDrops) tabNavDrops.addEventListener('click', async () => await switchTab('drops-tab'));
 
   // Restaurer la tab active après chargement (immédiatement pour éviter le flash)
   const savedTab = sessionStorage.getItem('ALLAIN2MARIE_ADMIN_ACTIVE_TAB');
@@ -512,6 +517,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (tabNavPromos) {
       tabNavPromos.className = savedTab === 'promos-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
+    }
+    if (tabNavDrops) {
+      tabNavDrops.className = savedTab === 'drops-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
     }
     if (tabNavAddProduct) {
       tabNavAddProduct.className = savedTab === 'add-product-tab' ? 'btn btn-primary admin-tab-btn active' : 'btn btn-outline admin-tab-btn';
@@ -2107,7 +2115,252 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 8. NEWSLETTER SUBSCRIPTIONS MANAGEMENT
+  // 8. DROPS MANAGEMENT
+  // ==========================================
+  
+  function initDropsManagement() {
+    const dropConfigForm = document.getElementById('dropConfigForm');
+    const previewDropBtn = document.getElementById('previewDropBtn');
+    const openSiteBtn = document.getElementById('openSiteBtn');
+    const closeSiteBtn = document.getElementById('closeSiteBtn');
+    
+    // Charger la configuration existante
+    loadDropConfig();
+    updateSiteStatus();
+    
+    // Gestion du formulaire
+    if (dropConfigForm) {
+      dropConfigForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const dropConfig = {
+          title: document.getElementById('dropTitle').value,
+          description: document.getElementById('dropDescription').value,
+          dropDate: document.getElementById('dropDate').value,
+          isActive: document.getElementById('dropActive').checked,
+          updatedAt: new Date().toISOString()
+        };
+        
+        try {
+          if (typeof db !== 'undefined' && db) {
+            await db.collection('settings').doc('drop').set(dropConfig);
+            showToast('Configuration du drop enregistrée avec succès !', 'success');
+          } else {
+            localStorage.setItem('ALLAIN2MARIE_DROP_CONFIG', JSON.stringify(dropConfig));
+            showToast('Configuration du drop enregistrée localement !', 'success');
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'enregistrement:', error);
+          showToast('Erreur lors de l\'enregistrement de la configuration', 'error');
+        }
+      });
+    }
+    
+    // Bouton Ouvrir le site
+    if (openSiteBtn) {
+      openSiteBtn.addEventListener('click', async () => {
+        try {
+          console.log('Tentative d\'ouverture du site...');
+          
+          // TOUJOURS mettre à jour localStorage en priorité
+          localStorage.setItem('ALLAIN2MARIE_SITE_STATUS', JSON.stringify({ isOpen: true }));
+          console.log('Statut localStorage mis à jour: OUVERT');
+          
+          // Mise à jour Firebase en arrière-plan
+          if (typeof db !== 'undefined' && db) {
+            try {
+              await db.collection('settings').doc('site').set({
+                isOpen: true,
+                updatedAt: new Date().toISOString()
+              });
+              console.log('Statut Firebase mis à jour: OUVERT');
+            } catch (error) {
+              console.log('Erreur Firebase (non critique):', error);
+            }
+          }
+          
+          showToast('Site ouvert avec succès !', 'success');
+          
+          // Forcer la mise à jour de l'affichage
+          updateSiteStatus();
+          
+          // Nettoyer le sessionStorage pour éviter les problèmes de cache
+          sessionStorage.removeItem('lastSiteCheck');
+          sessionStorage.removeItem('redirectingTo');
+          
+        } catch (error) {
+          console.error('Erreur lors de l\'ouverture:', error);
+          showToast('Erreur lors de l\'ouverture du site', 'error');
+        }
+      });
+    }
+    
+    // Bouton Fermer le site
+    if (closeSiteBtn) {
+      closeSiteBtn.addEventListener('click', async () => {
+        try {
+          console.log('Tentative de fermeture du site...');
+          
+          // TOUJOURS mettre à jour localStorage en priorité
+          localStorage.setItem('ALLAIN2MARIE_SITE_STATUS', JSON.stringify({ isOpen: false }));
+          console.log('Statut localStorage mis à jour: FERMÉ');
+          
+          // Mise à jour Firebase en arrière-plan
+          if (typeof db !== 'undefined' && db) {
+            try {
+              await db.collection('settings').doc('site').set({
+                isOpen: false,
+                updatedAt: new Date().toISOString()
+              });
+              console.log('Statut Firebase mis à jour: FERMÉ');
+            } catch (error) {
+              console.log('Erreur Firebase (non critique):', error);
+            }
+          }
+          
+          showToast('Site fermé avec succès !', 'success');
+          
+          // Forcer la mise à jour de l'affichage
+          updateSiteStatus();
+          
+          // Nettoyer le sessionStorage
+          sessionStorage.removeItem('lastSiteCheck');
+          sessionStorage.removeItem('redirectingTo');
+          
+        } catch (error) {
+          console.error('Erreur lors de la fermeture:', error);
+          showToast('Erreur lors de la fermeture du site', 'error');
+        }
+      });
+    }
+    
+    // Prévisualisation
+    if (previewDropBtn) {
+      previewDropBtn.addEventListener('click', () => {
+        window.open('coming-soon.html', '_blank');
+      });
+    }
+    
+    // Charger les notifications
+    loadNotifications();
+  }
+  
+  async function updateSiteStatus() {
+    const siteStatus = document.getElementById('siteStatus');
+    if (!siteStatus) return;
+    
+    try {
+      let isOpen = true; // Par défaut ouvert
+      
+      if (typeof db !== 'undefined' && db) {
+        const siteDoc = await db.collection('settings').doc('site').get();
+        if (siteDoc.exists) {
+          isOpen = siteDoc.data().isOpen !== false;
+        }
+      } else {
+        const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+        if (localStatus) {
+          isOpen = JSON.parse(localStatus).isOpen !== false;
+        }
+      }
+      
+      if (isOpen) {
+        siteStatus.textContent = 'État du site : OUVERT';
+        siteStatus.style.background = '#ecfdf5';
+        siteStatus.style.color = '#10b981';
+        siteStatus.style.border = '1px solid #10b981';
+      } else {
+        siteStatus.textContent = 'État du site : FERMÉ';
+        siteStatus.style.background = '#fef2f2';
+        siteStatus.style.color = '#ef4444';
+        siteStatus.style.border = '1px solid #ef4444';
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut:', error);
+      siteStatus.textContent = 'État du site : Erreur de chargement';
+    }
+  }
+  
+  async function loadDropConfig() {
+    try {
+      let dropConfig = null;
+      
+      if (typeof db !== 'undefined' && db) {
+        const doc = await db.collection('settings').doc('drop').get();
+        if (doc.exists) {
+          dropConfig = doc.data();
+        }
+      } else {
+        const localConfig = localStorage.getItem('ALLAIN2MARIE_DROP_CONFIG');
+        if (localConfig) {
+          dropConfig = JSON.parse(localConfig);
+        }
+      }
+      
+      if (dropConfig) {
+        document.getElementById('dropTitle').value = dropConfig.title || '';
+        document.getElementById('dropDescription').value = dropConfig.description || '';
+        document.getElementById('dropDate').value = dropConfig.dropDate || '';
+        document.getElementById('dropActive').checked = dropConfig.isActive || false;
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la configuration:', error);
+    }
+  }
+  
+  async function loadNotifications() {
+    try {
+      const notificationsList = document.getElementById('notificationsList');
+      
+      if (typeof db !== 'undefined' && db) {
+        const snapshot = await db.collection('notifications')
+          .orderBy('createdAt', 'desc')
+          .limit(50)
+          .get();
+        
+        if (snapshot.empty) {
+          notificationsList.innerHTML = '<p style="color: var(--text-dim);">Aucune notification enregistrée</p>';
+          return;
+        }
+        
+        notificationsList.innerHTML = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+              <div>
+                <div style="font-weight: 600;">${data.email}</div>
+                <div style="font-size: 0.85rem; color: var(--text-dim);">${new Date(data.createdAt).toLocaleString('fr-FR')}</div>
+              </div>
+              <button class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="deleteNotification('${doc.id}')">Supprimer</button>
+            </div>
+          `;
+        }).join('');
+      } else {
+        notificationsList.innerHTML = '<p style="color: var(--text-dim);">Notifications non disponibles en mode local</p>';
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des notifications:', error);
+    }
+  }
+  
+  window.deleteNotification = async function(notificationId) {
+    try {
+      if (typeof db !== 'undefined' && db) {
+        await db.collection('notifications').doc(notificationId).delete();
+        showToast('Notification supprimée', 'success');
+        loadNotifications();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      showToast('Erreur lors de la suppression', 'error');
+    }
+  };
+  
+  // Initialiser la gestion des drops
+  initDropsManagement();
+
+  // ==========================================
+  // 9. NEWSLETTER SUBSCRIPTIONS MANAGEMENT
   // ==========================================
   // Newsletter functionality removed
   // ==========================================
@@ -2122,6 +2375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await renderOrders();
     renderCollectionsTable();
     renderPromosTable();
+    initDropsManagement();
   })();
 
   // Synchronisation Cloud Firebase en arrière-plan

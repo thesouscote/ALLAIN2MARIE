@@ -6,10 +6,102 @@
   <meta name="description" content="ALLAIN2MARIE - Marque de Streetwear et T-Shirts Exclusifs">
   <title>ALLAIN2MARIE | Accueil</title>
   <meta id="pageTitleTemplate" data-template="ALLAIN2MARIE | {category}">
+  
+  <!-- Firebase SDK (chargé avant la vérification) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="db.js?v=2"></script>
+  
+  <!-- Script de vérification du statut du site (exécuté avant tout chargement) -->
+  <script>
+    // Vérifier si le site est ouvert ou fermé
+    async function checkSiteStatus() {
+      try {
+        let isOpen = true; // Par défaut ouvert
+        
+        console.log('Vérification du statut du site...');
+        
+        // SEULEMENT localStorage (plus fiable, sans conflit Firebase)
+        const localStatus = localStorage.getItem('ALLAIN2MARIE_SITE_STATUS');
+        if (localStatus) {
+          isOpen = JSON.parse(localStatus).isOpen !== false;
+          console.log('Statut localStorage:', isOpen ? 'OUVERT' : 'FERMÉ');
+          console.log('Valeur localStorage:', localStatus);
+        } else {
+          console.log('Aucun statut local trouvé, site ouvert par défaut');
+          isOpen = true;
+        }
+        
+        console.log('Statut final:', isOpen ? 'OUVERT' : 'FERMÉ');
+        
+        if (!isOpen) {
+          console.log('Redirection vers coming-soon.html');
+          sessionStorage.setItem('redirectingTo', 'coming-soon');
+          window.location.href = 'coming-soon.html';
+          return;
+        }
+        
+        console.log('Site accessible');
+        
+        // Afficher le body seulement si le site est accessible
+        document.body.style.display = 'block';
+      } catch (error) {
+        console.log('Erreur lors de la vérification du statut du site:', error);
+        // En cas d'erreur, afficher le body par sécurité
+        document.body.style.display = 'block';
+      }
+    }
+    
+    // Attendre que Firebase soit initialisé avant de vérifier le statut
+    function waitForFirebase() {
+      return new Promise((resolve) => {
+        if (typeof isFirebaseInitialized !== 'undefined' && isFirebaseInitialized === true) {
+          console.log('Firebase déjà initialisé');
+          resolve();
+        } else {
+          console.log('Attente de l\'initialisation Firebase...');
+          const checkInterval = setInterval(() => {
+            if (typeof isFirebaseInitialized !== 'undefined' && isFirebaseInitialized === true) {
+              console.log('Firebase initialisé !');
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 100);
+          
+          // Timeout de sécurité après 10 secondes
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            console.log('Timeout Firebase initialisation, continuation malgré tout');
+            resolve();
+          }, 10000);
+        }
+      });
+    }
+    
+    // Exécuter la vérification après l'initialisation Firebase
+    waitForFirebase().then(() => {
+      console.log('Démarrage de la vérification du statut...');
+      console.log('db disponible?', typeof db !== 'undefined');
+      console.log('db object:', db);
+      
+      // Attendre que le body soit disponible dans le DOM
+      if (document.body) {
+        checkSiteStatus();
+      } else {
+        document.addEventListener('DOMContentLoaded', () => {
+          checkSiteStatus();
+        });
+      }
+    });
+  </script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css?v=2">
+  <style>
+    body { display: none; }
+  </style>
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-W218QCF655"></script>
   <script>
@@ -398,10 +490,6 @@
     <div style="font-size:0.82rem; color:rgba(255,255,255,0.6);">Retour à la boutique…</div>
   </div>
 
-  <!-- Firebase SDK & Database -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="db.js?v=2"></script>
   <script src="app.js?v=4"></script>
 </body>
 </html>
